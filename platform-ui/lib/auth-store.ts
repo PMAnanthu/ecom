@@ -35,6 +35,21 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, accessToken: null, storeId: null });
       },
     }),
-    { name: 'auth-store', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, storeId: s.storeId }) }
+    { name: 'auth-store',
+      partialize: (s) => ({ user: s.user, accessToken: s.accessToken, storeId: s.storeId }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.accessToken) localStorage.setItem('accessToken', state.accessToken);
+        if (state?.storeId) {
+          // Re-sync storeId into the raw key the api interceptor reads
+          const raw = localStorage.getItem('auth-store');
+          if (!raw) return;
+          try {
+            const parsed = JSON.parse(raw);
+            parsed.state.storeId = state.storeId;
+            localStorage.setItem('auth-store', JSON.stringify(parsed));
+          } catch { /* ignore */ }
+        }
+      },
+    }
   )
 );

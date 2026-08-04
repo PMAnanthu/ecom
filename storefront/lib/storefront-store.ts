@@ -24,6 +24,7 @@ export const useStorefrontStore = create<AuthState>()(
       accessToken: null,
       store: null,
       setAuth: (user, accessToken, refreshToken) => {
+        // Store in both zustand persist AND localStorage so api interceptor can read it
         localStorage.setItem('sf_accessToken', accessToken);
         localStorage.setItem('sf_refreshToken', refreshToken);
         set({ user, accessToken });
@@ -35,6 +36,16 @@ export const useStorefrontStore = create<AuthState>()(
         set({ user: null, accessToken: null });
       },
     }),
-    { name: 'sf-auth', partialize: (s) => ({ user: s.user, accessToken: s.accessToken, store: s.store }) }
+    {
+      name: 'sf-auth',
+      // Persist all auth + store so user stays logged in on refresh
+      partialize: (s) => ({ user: s.user, accessToken: s.accessToken, store: s.store }),
+      onRehydrateStorage: () => (state) => {
+        // Sync localStorage token with rehydrated zustand state
+        if (state?.accessToken) {
+          localStorage.setItem('sf_accessToken', state.accessToken);
+        }
+      },
+    }
   )
 );
