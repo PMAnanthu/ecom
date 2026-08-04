@@ -167,9 +167,7 @@ export default function CheckoutPage() {
             ))}
             <label className="flex items-center gap-2 text-sm cursor-pointer" htmlFor="save-addr">
               <input id="save-addr" type="checkbox" checked={saveAddr} onChange={e => setSaveAddr(e.target.checked)} className="accent-black" />
-              Save this address for future orders
-            </label>
-              Save this address for future orders
+              <span>Save this address for future orders</span>
             </label>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <Button type="submit" disabled={loading} className={btnCls}>
