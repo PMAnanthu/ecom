@@ -1,11 +1,4 @@
 import type { NextConfig } from 'next';
-import withSerwistInit from '@serwist/next';
-
-const withSerwist = withSerwistInit({
-  swSrc: 'app/sw.ts',
-  swDest: 'public/sw.js',
-  disable: process.env.NODE_ENV !== 'production',
-});
 
 const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://localhost:3004';
 
@@ -20,4 +13,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSerwist(nextConfig);
+export default nextConfig;
