@@ -5,17 +5,25 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
-import { useTemplate } from '@/lib/template-context';
+import { useTemplate, useCurrency } from '@/lib/template-context';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+function getStoreIdFromLocalStorage(): string | null {
+  try {
+    const raw = localStorage.getItem('sf-auth');
+    return raw ? JSON.parse(raw)?.state?.store?.id ?? null : null;
+  } catch { return null; }
+}
 
 export default function CheckoutPage() {
   const { items, total, clear } = useCartStore();
   const { store, user } = useStorefrontStore();
   const router = useRouter();
   const template = useTemplate();
+  const { symbol } = useCurrency();
   const isCard = template === 'card';
   const [form, setForm] = useState({ name: '', line1: '', city: '', country: '', zip: '' });
   const [loading, setLoading] = useState(false);
@@ -24,14 +32,20 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) { router.push('/login'); return; }
-    if (!store) { setError('Store not found'); return; }
+
+    // Try store from zustand first, fall back to localStorage
+    const storeId = store?.id || getStoreIdFromLocalStorage();
+    if (!storeId) { setError('Store not found — please go back and try again.'); return; }
+
     setLoading(true);
+    setError('');
     try {
-      await api.post('/orders/orders/checkout', { shippingAddress: form, storeId: store.id });
+      await api.post('/orders/orders/checkout', { shippingAddress: form, storeId });
       clear();
       router.push('/orders');
-    } catch {
-      setError('Failed to place order. Please try again.');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg || 'Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -40,9 +54,9 @@ export default function CheckoutPage() {
   const fields: [keyof typeof form, string, string][] = [
     ['name', 'Full Name', 'John Doe'],
     ['line1', 'Address', '123 Main St'],
-    ['city', 'City', 'New York'],
-    ['country', 'Country', 'US'],
-    ['zip', 'ZIP Code', '10001'],
+    ['city', 'City', 'Kerala'],
+    ['country', 'Country', 'IN'],
+    ['zip', 'PIN Code', '682001'],
   ];
 
   const boxCls = isCard ? 'bg-white rounded-2xl shadow p-6' : 'border rounded-xl p-5';
@@ -54,7 +68,7 @@ export default function CheckoutPage() {
 
   return (
     <TemplateWrapper>
-      <div className="max-w-2xl mx-auto px-6 py-10 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
         <h1 className={`text-2xl font-bold ${isCard ? 'text-indigo-900' : ''}`}>Checkout</h1>
 
         <div className={boxCls}>
@@ -62,11 +76,11 @@ export default function CheckoutPage() {
           {items.map((i) => (
             <div key={i.productId} className="flex justify-between text-sm py-1 text-neutral-600">
               <span>{i.name} × {i.qty}</span>
-              <span>${(i.price * i.qty).toFixed(2)}</span>
+              <span>{symbol}{(i.price * i.qty).toFixed(2)}</span>
             </div>
           ))}
           <div className="flex justify-between font-bold mt-3 pt-3 border-t text-lg">
-            <span>Total</span><span>${total().toFixed(2)}</span>
+            <span>Total</span><span>{symbol}{total().toFixed(2)}</span>
           </div>
         </div>
 
