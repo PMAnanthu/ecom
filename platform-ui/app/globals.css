@@ -4,6 +4,9 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Hide Next.js Dev Tools button */
+nextjs-portal { display: none !important; }
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

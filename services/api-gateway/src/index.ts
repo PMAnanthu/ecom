@@ -66,6 +66,10 @@ app.all('/api/store/*', ...mw(authenticate, requireRole('ADMIN')), forward(STORE
 app.all('/api/catalog', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 app.all('/api/catalog/*', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 
+// Addresses: authenticated users only
+app.all('/api/addresses', ...mw(authenticate), forward(AUTH_URL, 'addresses'));
+app.all('/api/addresses/*', ...mw(authenticate), forward(AUTH_URL, 'addresses'));
+
 // Orders: any authenticated user
 app.all('/api/orders', ...mw(authenticate), forward(ORDER_URL, 'orders'));
 app.all('/api/orders/*', ...mw(authenticate), forward(ORDER_URL, 'orders'));

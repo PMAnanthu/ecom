@@ -4,7 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Hide scrollbar but keep scrollable */
+/* Hide Next.js Dev Tools button in development */
+[data-nextjs-dialog-overlay],
+button[aria-label="Open Next.js Dev Tools"],
+nextjs-portal {
+  display: none !important;
+}
 .scrollbar-none {
   scrollbar-width: none;
   -ms-overflow-style: none;

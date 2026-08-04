@@ -127,7 +127,13 @@ export default function HomePage() {
                   <Link href={`/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></Link>
                   <div className="flex items-center justify-between mt-auto pt-2 border-t">
                     <span className="font-bold text-lg">{symbol}{p.price.toFixed(2)}</span>
-                    {p.stock > 0 && <button onClick={() => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 })} className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>}
+                    {p.stock > 0 && (
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 }); }}
+                        className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">
+                        Add
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

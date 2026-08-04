@@ -57,7 +57,10 @@ export function ProductCard({ product }: Readonly<{ product: Product }>) {
           <span className="font-bold text-sm">{symbol}{product.price.toFixed(2)}</span>
           {product.stock === 0
             ? <Badge variant="secondary" className="text-xs">Out of stock</Badge>
-            : <Button size="sm" className="h-7 text-xs px-3" onClick={() => addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 })}>Add</Button>
+            : <Button size="sm" className="h-7 text-xs px-3"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 }); }}>
+                Add
+              </Button>
           }
         </div>
       </div>
