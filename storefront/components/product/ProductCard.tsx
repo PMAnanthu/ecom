@@ -11,7 +11,9 @@ interface Product {
   price: number;
   stock: number;
   images: string[];
+  tags?: string[];
   description?: string;
+  category?: { id: string; name: string };
 }
 
 const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
@@ -22,28 +24,48 @@ function productImageUrl(path: string): string {
   return `${CATALOG_URL}${path}`;
 }
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: Readonly<{ product: Product }>) {
   const { addItem } = useCartStore();
 
   return (
-    <div className="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow flex flex-col">
       <Link href={`/products/${product.id}`}>
-        <div className="aspect-square bg-neutral-100 flex items-center justify-center text-neutral-300 text-4xl">
+        <div className="aspect-square bg-neutral-100 flex items-center justify-center text-neutral-300 text-4xl overflow-hidden">
           {product.images?.[0]
-            ? <img src={productImageUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
+            ? <img src={productImageUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
             : '📦'
           }
         </div>
       </Link>
-      <div className="p-3">
+
+      <div className="p-3 flex flex-col gap-1 flex-1">
+        {/* Category */}
+        {product.category && (
+          <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide truncate">
+            {product.category.name}
+          </span>
+        )}
+
         <Link href={`/products/${product.id}`}>
           <p className="font-medium text-sm hover:underline line-clamp-1">{product.name}</p>
         </Link>
-        <div className="flex items-center justify-between mt-2">
-          <span className="font-bold">${product.price.toFixed(2)}</span>
+
+        {/* Tags — single horizontal strip, no wrap */}
+        {product.tags && product.tags.length > 0 && (
+          <div className="flex gap-1 overflow-x-auto scrollbar-none">
+            {product.tags.map((t) => (
+              <span key={t} className="shrink-0 text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between mt-auto pt-2">
+          <span className="font-bold text-sm">${product.price.toFixed(2)}</span>
           {product.stock === 0
-            ? <Badge variant="secondary">Out of stock</Badge>
-            : <Button size="sm" onClick={() => addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 })}>Add</Button>
+            ? <Badge variant="secondary" className="text-xs">Out of stock</Badge>
+            : <Button size="sm" className="h-7 text-xs px-3" onClick={() => addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 })}>Add</Button>
           }
         </div>
       </div>
