@@ -20,7 +20,9 @@ function getStoreIdFromLocalStorage(): string | null {
   } catch { return null; }
 }
 
-const ADDR_FIELDS: [keyof typeof form, string, string][] = [
+type AddrForm = { name: string; line1: string; city: string; country: string; zip: string };
+
+const ADDR_FIELDS: [keyof AddrForm, string, string][] = [
   ['name', 'Full Name', 'John Doe'],
   ['line1', 'Address', '123 Main St'],
   ['city', 'City', 'Kerala'],
@@ -41,7 +43,7 @@ export default function CheckoutPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [saveAddr, setSaveAddr] = useState(true);
-  const [form, setForm] = useState({ name: '', line1: '', city: '', country: 'IN', zip: '' });
+  const [form, setForm] = useState<AddrForm>({ name: '', line1: '', city: '', country: 'IN', zip: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
