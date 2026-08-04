@@ -36,3 +36,4 @@ Thumbs.db
 
 # Prisma generated (regenerated on install)
 **/node_modules/.prisma/
+.env.cloudrun
