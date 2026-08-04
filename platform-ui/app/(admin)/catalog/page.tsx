@@ -10,15 +10,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[] }
+interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[]; tags: string[] }
 interface ImageEntry { file: File; preview: string; id: string }
 
 const CATALOG_SERVICE = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
 
-function imgUrl(path: string) {
-  if (!path) return '';
-  if (path.startsWith('http')) return path;
-  return `${CATALOG_SERVICE}${path}`;
+function imgUrl(src: string) {
+  if (!src) return '';
+  if (src.startsWith('http')) return src;
+  return `${CATALOG_SERVICE}${src}`;
 }
 
 function readFileAsDataUrl(file: File): Promise<string> {
@@ -28,9 +28,6 @@ function readFileAsDataUrl(file: File): Promise<string> {
     reader.readAsDataURL(file);
   });
 }
-
-type FormState = { name: string; price: string; stock: string; description: string };
-const emptyForm: FormState = { name: '', price: '', stock: '0', description: '' };
 
 function submitLabel(saving: boolean, mode: string): string {
   if (saving) return 'Saving…';
@@ -42,6 +39,46 @@ function SubmitButton({ saving, mode }: Readonly<{ saving: boolean; mode: string
   return <Button type="submit" disabled={saving}>{submitLabel(saving, mode)}</Button>;
 }
 
+type FormState = { name: string; price: string; stock: string; description: string };
+const emptyForm: FormState = { name: '', price: '', stock: '0', description: '' };
+
+function TagInput({ tags, onChange }: Readonly<{ tags: string[]; onChange: (tags: string[]) => void }>) {
+  const [input, setInput] = useState('');
+
+  const addTag = () => {
+    const trimmed = input.trim().toLowerCase();
+    if (trimmed && !tags.includes(trimmed)) onChange([...tags, trimmed]);
+    setInput('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(); }
+    if (e.key === 'Backspace' && !input && tags.length > 0) onChange(tags.slice(0, -1));
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1 min-h-8 p-2 border rounded-md bg-white">
+        {tags.map((t) => (
+          <span key={t} className="flex items-center gap-1 bg-neutral-100 text-neutral-700 text-xs px-2 py-0.5 rounded-full">
+            {t}
+            <button type="button" onClick={() => onChange(tags.filter((x) => x !== t))} className="text-neutral-400 hover:text-red-500">×</button>
+          </span>
+        ))}
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={addTag}
+          placeholder={tags.length === 0 ? 'Type a tag and press Enter…' : ''}
+          className="flex-1 min-w-24 text-sm outline-none bg-transparent"
+        />
+      </div>
+      <p className="text-xs text-neutral-400">Press Enter or comma to add a tag</p>
+    </div>
+  );
+}
+
 export default function CatalogPage() {
   const { storeId } = useAuthStore();
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,21 +87,23 @@ export default function CatalogPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [tags, setTags] = useState<string[]>([]);
   const [images, setImages] = useState<ImageEntry[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => api.get('/catalog/products').then((r) => setProducts(r.data.products)).catch(() => {});
   useEffect(() => { load(); }, []);
 
-  const openAdd = () => { setForm(emptyForm); setImages([]); setEditingId(null); setError(''); setMode('add'); };
+  const openAdd = () => { setForm(emptyForm); setTags([]); setImages([]); setEditingId(null); setError(''); setMode('add'); };
   const openEdit = (p: Product) => {
     setForm({ name: p.name, price: String(p.price), stock: String(p.stock), description: p.description || '' });
+    setTags(p.tags || []);
     setImages([]);
     setEditingId(p.id);
     setError('');
     setMode('edit');
   };
-  const closeForm = () => { setMode('idle'); setEditingId(null); setImages([]); setError(''); };
+  const closeForm = () => { setMode('idle'); setEditingId(null); setTags([]); setImages([]); setError(''); };
 
   const addImageFiles = async (files: File[]) => {
     const entries = await Promise.all(
@@ -104,6 +143,7 @@ export default function CatalogPage() {
         price: Number.parseFloat(form.price),
         stock: Number.parseInt(form.stock, 10),
         description: form.description || undefined,
+        tags,
       };
 
       let productId = editingId;
@@ -128,7 +168,6 @@ export default function CatalogPage() {
   };
 
   const del = async (id: string) => { await api.delete(`/catalog/products/${id}`); await load(); };
-
   const isOpen = mode !== 'idle';
 
   return (
@@ -140,9 +179,7 @@ export default function CatalogPage() {
 
       {isOpen && (
         <Card className="mb-6 max-w-lg">
-          <CardHeader>
-            <CardTitle className="text-base">{mode === 'edit' ? 'Edit Product' : 'New Product'}</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base">{mode === 'edit' ? 'Edit Product' : 'New Product'}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
@@ -165,6 +202,10 @@ export default function CatalogPage() {
                 <Label>Description</Label>
                 <Textarea value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
+              </div>
+              <div className="space-y-1">
+                <Label>Classification Tags</Label>
+                <TagInput tags={tags} onChange={setTags} />
               </div>
               <div className="space-y-2">
                 <Label>{mode === 'edit' ? 'Add More Images' : 'Product Images'}</Label>
@@ -205,10 +246,13 @@ export default function CatalogPage() {
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm truncate">{p.name}</p>
               <p className="text-xs text-neutral-400">${p.price.toFixed(2)} · {p.stock} in stock</p>
+              {p.tags?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {p.tags.map((t) => <span key={t} className="text-xs bg-neutral-100 text-neutral-600 px-1.5 py-0.5 rounded-full">{t}</span>)}
+                </div>
+              )}
             </div>
-            {(p.images?.length ?? 0) > 0 && (
-              <Badge variant="secondary" className="text-xs">{p.images.length} img</Badge>
-            )}
+            {(p.images?.length ?? 0) > 0 && <Badge variant="secondary" className="text-xs">{p.images.length} img</Badge>}
             <Button size="sm" variant="outline" onClick={() => openEdit(p)}>Edit</Button>
             <Button size="sm" variant="destructive" onClick={() => del(p.id)}>Delete</Button>
           </div>

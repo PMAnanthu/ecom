@@ -10,12 +10,12 @@ datasource db {
 }
 
 model AdminUser {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  status         AdminStatus  @default(ACTIVE)
+  id             String        @id @default(uuid())
+  email          String        @unique
+  status         AdminStatus   @default(ACTIVE)
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
   @@schema("platform_svc")
 }
 
@@ -27,6 +27,17 @@ model Subscription {
   features    Json        @default("{}")
   admins      AdminUser[]
   createdAt   DateTime    @default(now())
+  @@schema("platform_svc")
+}
+
+model StoreTemplate {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  preview     String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
   @@schema("platform_svc")
 }
 

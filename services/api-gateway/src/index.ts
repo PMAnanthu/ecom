@@ -51,7 +51,10 @@ app.get('/api/catalog/products/*', forward(CATALOG_URL, 'catalog'));
 app.get('/api/catalog/categories', forward(CATALOG_URL, 'catalog'));
 app.get('/api/catalog/categories/*', forward(CATALOG_URL, 'catalog'));
 
-// Platform: super-admin only
+// Public: templates list (admin picker needs it)
+app.get('/api/platform/templates', forward(PLATFORM_URL, 'platform'));
+
+// Platform: super-admin only (all other platform routes)
 app.all('/api/platform', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 

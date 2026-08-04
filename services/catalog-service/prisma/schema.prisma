@@ -21,16 +21,17 @@ model Category {
 }
 
 model Product {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   storeId     String
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
   name        String
   description String?
   price       Float
-  stock       Int      @default(0)
-  images      Json     @default("[]")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  stock       Int       @default(0)
+  images      Json      @default("[]")
+  tags        String[]  @default([])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   @@schema("catalog_svc")
 }

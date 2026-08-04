@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-04
+
+### Added
+- **Tags / Classification**: Products now have a multi-tag field. Admin can add tags via a pill-style input (Enter or comma to add). Storefront filters products by tag in all templates.
+- **3 Full Storefront Templates**: Each template controls the entire customer experience — nav shell, home, products, product detail, about, cart, checkout, and orders pages all adapt per template:
+  - **Top Nav** (`default`) — horizontal nav with hero banner, dark header
+  - **Sidebar** (`sidebar`) — persistent left sidebar with category + tag filters
+  - **Card** (`card`) — gradient background, large cards, indigo accent color, hero section
+- **Template switching**: Storefront reads the store's `template` field on every page via `TemplateProvider` context. Changing the template in admin settings immediately changes the entire store layout.
+- **About page**: New `/about` route on storefront — shows store name, description, and contact info (address, phone) from shop settings.
+- **Order tracking**: Orders page now shows a visual progress bar (Ordered → Processing → Shipped → Delivered) styled per template.
+- **Super-admin template management** (`/super/templates`): Super admin can enable/disable which templates admins are allowed to pick, with visual mockup previews.
+- **Admin template picker**: Settings page shows visual template previews with mockups; admin picks from enabled templates only.
+- **`platform-service`**: Added `StoreTemplate` model + `/templates` endpoint; seeded with 3 built-in templates.
+- **`catalog-service`**: Added `tags String[]` field to Product; `GET /products/tags` returns all unique tags for a store; `tag` query param filters products.
+
+### Fixed
+- `platform-service` tsconfig now includes only `src/` to prevent seed.ts from breaking Docker build
+
+[0.2.0]: https://github.com/PMAnanthu/ecom/compare/v0.1.2...v0.2.0
+[0.1.2]: https://github.com/PMAnanthu/ecom/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/PMAnanthu/ecom/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/PMAnanthu/ecom/releases/tag/v0.1.0
+
 ## [0.1.2] - 2026-08-04
 
 ### Fixed
