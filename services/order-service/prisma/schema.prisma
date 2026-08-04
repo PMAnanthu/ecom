@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["order_svc"]
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  storeId         String
+  userId          String
+  status          OrderStatus @default(PENDING)
+  total           Float
+  shippingAddress Json
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@schema("order_svc")
+}
+
+model OrderItem {
+  id           String @id @default(uuid())
+  orderId      String
+  order        Order  @relation(fields: [orderId], references: [id])
+  productId    String
+  productName  String
+  qty          Int
+  priceAtOrder Float
+  @@schema("order_svc")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  @@schema("order_svc")
+}

@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["platform_svc"]
+}
+
+model AdminUser {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  status         AdminStatus  @default(ACTIVE)
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  createdAt      DateTime     @default(now())
+  @@schema("platform_svc")
+}
+
+model Subscription {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  maxProducts Int         @default(50)
+  price       Float       @default(0)
+  features    Json        @default("{}")
+  admins      AdminUser[]
+  createdAt   DateTime    @default(now())
+  @@schema("platform_svc")
+}
+
+enum AdminStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+  @@schema("platform_svc")
+}

@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["store_svc"]
+}
+
+model Store {
+  id          String   @id @default(uuid())
+  adminId     String   @unique
+  name        String
+  subdomain   String   @unique
+  domain      String?
+  published   Boolean  @default(false)
+  template    String   @default("default")
+  branding    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@schema("store_svc")
+}

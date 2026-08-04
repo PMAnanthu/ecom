@@ -1,0 +1,28 @@
+{
+  "name": "ecom",
+  "version": "0.1.0",
+  "description": "SaaS e-commerce platform — multi-tenant, microservice, PWA",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "platform-ui",
+    "storefront"
+  ],
+  "scripts": {
+    "dev:gateway": "cd services/api-gateway && npm run dev",
+    "dev:auth": "cd services/auth-service && npm run dev",
+    "dev:platform": "cd services/platform-service && npm run dev",
+    "dev:store": "cd services/store-service && npm run dev",
+    "dev:catalog": "cd services/catalog-service && npm run dev",
+    "dev:orders": "cd services/order-service && npm run dev",
+    "dev:storefront-svc": "cd services/storefront-service && npm run dev",
+    "dev:ui": "cd platform-ui && npm run dev -- --port 3100",
+    "dev:storefront": "cd storefront && npm run dev -- --port 3200 --webpack",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:build": "docker compose build"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

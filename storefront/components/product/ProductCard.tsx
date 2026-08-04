@@ -1,0 +1,44 @@
+'use client';
+
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { useCartStore } from '@/lib/cart-store';
+
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  stock: number;
+  images: string[];
+  description?: string;
+}
+
+export function ProductCard({ product }: { product: Product }) {
+  const { addItem } = useCartStore();
+
+  return (
+    <div className="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow">
+      <Link href={`/products/${product.id}`}>
+        <div className="aspect-square bg-neutral-100 flex items-center justify-center text-neutral-300 text-4xl">
+          {product.images?.[0]
+            ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+            : '📦'
+          }
+        </div>
+      </Link>
+      <div className="p-3">
+        <Link href={`/products/${product.id}`}>
+          <p className="font-medium text-sm hover:underline line-clamp-1">{product.name}</p>
+        </Link>
+        <div className="flex items-center justify-between mt-2">
+          <span className="font-bold">${product.price.toFixed(2)}</span>
+          {product.stock === 0
+            ? <Badge variant="secondary">Out of stock</Badge>
+            : <Button size="sm" onClick={() => addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 })}>Add</Button>
+          }
+        </div>
+      </div>
+    </div>
+  );
+}

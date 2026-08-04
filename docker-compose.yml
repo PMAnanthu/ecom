@@ -1,0 +1,170 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ecom
+      POSTGRES_PASSWORD: ecom_dev
+      POSTGRES_DB: ecom
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ecom']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth-service:
+    build: ./services/auth-service
+    ports:
+      - '3001:3001'
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/auth-service/src
+          target: /app/src
+
+  platform-service:
+    build: ./services/platform-service
+    ports:
+      - '3002:3002'
+    environment:
+      PORT: 3002
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/platform-service/src
+          target: /app/src
+
+  store-service:
+    build: ./services/store-service
+    ports:
+      - '3003:3003'
+    environment:
+      PORT: 3003
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/store-service/src
+          target: /app/src
+
+  catalog-service:
+    build: ./services/catalog-service
+    ports:
+      - '3004:3004'
+    environment:
+      PORT: 3004
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/catalog-service/src
+          target: /app/src
+
+  order-service:
+    build: ./services/order-service
+    ports:
+      - '3005:3005'
+    environment:
+      PORT: 3005
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/order-service/src
+          target: /app/src
+
+  storefront-service:
+    build: ./services/storefront-service
+    ports:
+      - '3006:3006'
+    environment:
+      PORT: 3006
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/storefront-service/src
+          target: /app/src
+
+  api-gateway:
+    build: ./services/api-gateway
+    ports:
+      - '4000:4000'
+    environment:
+      PORT: 4000
+      JWT_SECRET: dev_jwt_secret_change_in_prod
+      AUTH_SERVICE_URL: http://auth-service:3001
+      PLATFORM_SERVICE_URL: http://platform-service:3002
+      STORE_SERVICE_URL: http://store-service:3003
+      CATALOG_SERVICE_URL: http://catalog-service:3004
+      ORDER_SERVICE_URL: http://order-service:3005
+      STOREFRONT_SERVICE_URL: http://storefront-service:3006
+    depends_on:
+      - auth-service
+      - platform-service
+      - store-service
+      - catalog-service
+      - order-service
+      - storefront-service
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/api-gateway/src
+          target: /app/src
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:

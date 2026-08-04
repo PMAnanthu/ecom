@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["catalog_svc"]
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  storeId   String
+  name      String
+  products  Product[]
+  createdAt DateTime  @default(now())
+
+  @@unique([storeId, name])
+  @@schema("catalog_svc")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  storeId     String
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  name        String
+  description String?
+  price       Float
+  stock       Int      @default(0)
+  images      Json     @default("[]")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@schema("catalog_svc")
+}

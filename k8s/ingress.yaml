@@ -1,0 +1,83 @@
+# Traefik IngressRoute for ecom platform
+# Requires Traefik v2+ with CRDs installed (standard on k3s)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecom-api
+  namespace: ecom
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`api.ecom.app`)
+      kind: Rule
+      services:
+        - name: api-gateway
+          port: 4000
+  tls:
+    certResolver: letsencrypt
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecom-platform-ui
+  namespace: ecom
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`platform.ecom.app`)
+      kind: Rule
+      services:
+        - name: platform-ui
+          port: 3001
+  tls:
+    certResolver: letsencrypt
+---
+# Wildcard storefront: *.ecom.app → storefront
+# Each admin subdomain (myshop.ecom.app) routes to the same storefront pod,
+# which resolves the store via storefront-service by Host header.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecom-storefront
+  namespace: ecom
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostRegexp(`^[a-z0-9-]+\.ecom\.app$`) && !Host(`api.ecom.app`) && !Host(`platform.ecom.app`)
+      kind: Rule
+      services:
+        - name: storefront
+          port: 3000
+  tls:
+    certResolver: letsencrypt
+---
+# HTTP → HTTPS redirect
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-https
+  namespace: ecom
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecom-http-redirect
+  namespace: ecom
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: HostRegexp(`^.+\.ecom\.app$`)
+      kind: Rule
+      middlewares:
+        - name: redirect-https
+      services:
+        - name: storefront
+          port: 3000

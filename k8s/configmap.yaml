@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecom-config
+  namespace: ecom
+data:
+  AUTH_SERVICE_URL: "http://auth-service:3001"
+  PLATFORM_SERVICE_URL: "http://platform-service:3002"
+  STORE_SERVICE_URL: "http://store-service:3003"
+  CATALOG_SERVICE_URL: "http://catalog-service:3004"
+  ORDER_SERVICE_URL: "http://order-service:3005"
+  STOREFRONT_SERVICE_URL: "http://storefront-service:3006"
+  REDIS_URL: "redis://redis:6379"
