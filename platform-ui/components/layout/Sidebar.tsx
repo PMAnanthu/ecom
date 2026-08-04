@@ -14,10 +14,11 @@ const superAdminLinks = [
 
 const adminLinks = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/store', label: 'Store & Domain' },
-  { href: '/settings', label: 'Shop Settings' },
+  { href: '/customize', label: 'Customize Home' },
   { href: '/catalog', label: 'Catalog' },
   { href: '/orders', label: 'Orders' },
+  { href: '/store', label: 'Domain & Publish' },
+  { href: '/settings', label: 'Shop Settings' },
 ];
 
 export function Sidebar() {

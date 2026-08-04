@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 interface StoreConfig {
   id: string;
   name: string;
+  subdomain: string;
   template: string;
   branding: Record<string, string>;
 }

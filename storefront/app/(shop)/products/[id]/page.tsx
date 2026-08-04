@@ -3,9 +3,8 @@
 import { useEffect, useState, use } from 'react';
 import { api } from '@/lib/api';
 import { useCartStore } from '@/lib/cart-store';
-import { useTemplate } from '@/lib/template-context';
+import { useTemplate, useCurrency } from '@/lib/template-context';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
-import { imgUrl } from '@/components/templates/TemplateShells';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -16,8 +15,10 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
   const [product, setProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [activeImg, setActiveImg] = useState(0);
   const { addItem } = useCartStore();
   const template = useTemplate();
+  const { symbol } = useCurrency();
   const isCard = template === 'card';
 
   useEffect(() => {
@@ -26,6 +27,8 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
 
   if (!product) return <TemplateWrapper><div className="p-12 text-neutral-400 text-center">Loading…</div></TemplateWrapper>;
 
+  const images = product.images?.length ? product.images : [];
+
   const handleAdd = () => {
     addItem({ productId: product.id, name: product.name, price: product.price, qty });
     setAdded(true);
@@ -33,24 +36,37 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
   };
 
   const detail = (
-    <div className="grid md:grid-cols-2 gap-10">
+    <div className="grid md:grid-cols-2 gap-8">
+      {/* Image slideshow */}
       <div className="space-y-3">
         <div className={`aspect-square rounded-2xl overflow-hidden ${isCard ? 'shadow-lg' : 'border'} bg-neutral-100 flex items-center justify-center text-6xl`}>
-          {product.images?.[0] ? <img src={imgUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" /> : '📦'}
+          {images[activeImg]
+            ? <img src={images[activeImg]} alt={product.name} className="w-full h-full object-cover" />
+            : '📦'
+          }
         </div>
-        {product.images?.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto">
-            {product.images.map((img) => (
-              <img key={img} src={imgUrl(img)} alt="" className="w-16 h-16 object-cover rounded-lg border flex-shrink-0 cursor-pointer hover:opacity-80" />
-            ))}
+        {images.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {images.map((img, i) => {
+              const activeBorder = isCard ? 'border-indigo-500' : 'border-black';
+              const borderCls = i === activeImg ? activeBorder : 'border-transparent opacity-60 hover:opacity-100';
+              return (
+                <button key={img || i} onClick={() => setActiveImg(i)}
+                  className={`shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${borderCls}`}>
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* Info */}
       <div className="flex flex-col gap-4">
         {product.category && <Badge variant="secondary">{product.category.name}</Badge>}
         <h1 className="text-2xl font-bold">{product.name}</h1>
         {product.description && <p className="text-neutral-600">{product.description}</p>}
-        <p className={`text-3xl font-bold ${isCard ? 'text-indigo-700' : ''}`}>${product.price.toFixed(2)}</p>
+        <p className={`text-3xl font-bold ${isCard ? 'text-indigo-700' : ''}`}>{symbol}{product.price.toFixed(2)}</p>
         <p className="text-sm text-neutral-500">{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</p>
         {product.stock > 0 && (
           <div className="flex items-center gap-3">
@@ -71,7 +87,7 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
 
   return (
     <TemplateWrapper>
-      <div className={`mx-auto px-6 py-10 ${template === 'sidebar' ? 'max-w-3xl' : 'max-w-5xl'}`}>{detail}</div>
+      <div className={`mx-auto px-4 py-8 ${template === 'sidebar' ? 'max-w-3xl' : 'max-w-5xl'}`}>{detail}</div>
     </TemplateWrapper>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useTemplate } from '@/lib/template-context';
+import { useTemplate, useCurrency } from '@/lib/template-context';
 import { useShopData } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
@@ -22,11 +22,60 @@ function SidebarCategories() {
   );
 }
 
+function HeroSection({ storeName, branding }: Readonly<{ storeName: string; branding: Record<string, string> }>) {
+  const heading = branding.heroHeading || storeName;
+  const subtext = branding.heroSubtext || 'Discover our collection';
+  const style = branding.heroStyle || 'dark';
+  const bgImage = branding.heroBgImage || '';
+
+  if (style === 'image' && bgImage) {
+    return (
+      <div className="relative py-24 text-center" style={{ backgroundImage: `url(${bgImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 bg-black/50" />
+        <div className="relative z-10 text-white px-4">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
+          <p className="text-neutral-300 mb-8 text-lg">{subtext}</p>
+          <Link href="/products" className="bg-white text-black font-semibold px-8 py-3 rounded-full hover:bg-neutral-100">Shop Now</Link>
+        </div>
+      </div>
+    );
+  }
+  if (style === 'gradient') {
+    return (
+      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white py-20 text-center px-4">
+        <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
+        <p className="text-indigo-200 mb-8">{subtext}</p>
+        <Link href="/products" className="bg-white text-indigo-700 font-semibold px-8 py-3 rounded-full hover:bg-indigo-50">Shop Now</Link>
+      </div>
+    );
+  }
+  if (style === 'light') {
+    return (
+      <div className="bg-neutral-50 py-16 text-center px-4 border-b">
+        <h1 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">{heading}</h1>
+        <p className="text-neutral-500 mb-8">{subtext}</p>
+        <Link href="/products" className="bg-neutral-900 text-white font-semibold px-8 py-3 rounded-full hover:bg-neutral-700">Shop Now</Link>
+      </div>
+    );
+  }
+  // dark (default)
+  return (
+    <div className="bg-neutral-900 text-white py-20 text-center px-4">
+      <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
+      <p className="text-neutral-400 mb-8">{subtext}</p>
+      <Link href="/products" className="bg-white text-black font-semibold px-8 py-3 rounded-full hover:bg-neutral-100">Shop Now</Link>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const template = useTemplate();
   const { store } = useStorefrontStore();
   const { products, categories, category, setCategory } = useShopData();
   const { addItem } = useCartStore();
+  const { symbol } = useCurrency();
+  const branding = (store?.branding || {}) as Record<string, string>;
+  const storeName = store?.name || 'Welcome';
 
   const grid = (cols: string) => (
     <div className={`grid ${cols} gap-4`}>
@@ -49,12 +98,8 @@ export default function HomePage() {
   if (template === 'card') {
     return (
       <TemplateWrapper>
-        <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-700 text-white p-10 mb-10 text-center">
-            <h1 className="text-4xl font-extrabold mb-3">{store?.name || 'Welcome'}</h1>
-            <p className="text-indigo-200 mb-6">Discover our curated collection</p>
-            <Link href="/products" className="bg-white text-indigo-700 font-bold px-6 py-2 rounded-full hover:bg-indigo-50 transition-colors">Shop Now</Link>
-          </div>
+        <HeroSection storeName={storeName} branding={{ ...branding, heroStyle: branding.heroStyle || 'gradient' }} />
+        <div className="max-w-6xl mx-auto px-4 py-10">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.slice(0, 6).map((p) => (
               <div key={p.id} className="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
@@ -67,7 +112,7 @@ export default function HomePage() {
                   {p.category && <span className="text-xs text-indigo-600 font-medium">{p.category.name}</span>}
                   <Link href={`/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></Link>
                   <div className="flex items-center justify-between mt-auto pt-2 border-t">
-                    <span className="font-bold text-lg">${p.price.toFixed(2)}</span>
+                    <span className="font-bold text-lg">{symbol}{p.price.toFixed(2)}</span>
                     {p.stock > 0 && <button onClick={() => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 })} className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>}
                   </div>
                 </div>
@@ -79,16 +124,12 @@ export default function HomePage() {
     );
   }
 
-  // default / topnav
+  // topnav / default
   return (
     <TemplateWrapper>
-      <div className="bg-neutral-900 text-white py-20 text-center">
-        <h1 className="text-5xl font-bold mb-4">{store?.name || 'Welcome'}</h1>
-        <p className="text-neutral-400 mb-8">Discover our collection</p>
-        <Link href="/products" className="bg-white text-black font-semibold px-8 py-3 rounded-full hover:bg-neutral-100 transition-colors">Shop Now</Link>
-      </div>
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-6">
+      <HeroSection storeName={storeName} branding={branding} />
+      <div className="max-w-7xl mx-auto px-4 py-10">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <h2 className="text-xl font-bold">Featured Products</h2>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setCategory('')} className={`text-sm px-3 py-1 rounded-full ${!category ? 'bg-black text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}>All</button>
@@ -97,7 +138,7 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-        {grid('grid-cols-2 sm:grid-cols-3 lg:grid-cols-5')}
+        {grid('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4')}
         <div className="mt-8 text-center">
           <Link href="/products" className="text-sm underline text-neutral-500 hover:text-black">View all products →</Link>
         </div>
