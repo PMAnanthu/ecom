@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge';
 
 interface Product { id: string; name: string; price: number; stock: number; images: string[]; description?: string; category?: { name: string } }
 
+const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
+
+function imgUrl(path: string): string {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${CATALOG_URL}${path}`;
+}
+
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [product, setProduct] = useState<Product | null>(null);
@@ -26,7 +34,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       <div className="grid md:grid-cols-2 gap-8">
         <div className="aspect-square bg-neutral-100 rounded-lg overflow-hidden flex items-center justify-center text-6xl">
           {product.images?.[0]
-            ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+            ? <img src={imgUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
             : '📦'
           }
         </div>

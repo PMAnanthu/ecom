@@ -14,6 +14,14 @@ interface Product {
   description?: string;
 }
 
+const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
+
+function productImageUrl(path: string): string {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  return `${CATALOG_URL}${path}`;
+}
+
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCartStore();
 
@@ -22,7 +30,7 @@ export function ProductCard({ product }: { product: Product }) {
       <Link href={`/products/${product.id}`}>
         <div className="aspect-square bg-neutral-100 flex items-center justify-center text-neutral-300 text-4xl">
           {product.images?.[0]
-            ? <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+            ? <img src={productImageUrl(product.images[0])} alt={product.name} className="w-full h-full object-cover" />
             : '📦'
           }
         </div>
