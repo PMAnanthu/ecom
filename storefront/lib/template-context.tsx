@@ -8,20 +8,28 @@ const TemplateContext = createContext<string>('default');
 
 export function useTemplate() { return useContext(TemplateContext); }
 
+// In dev on localhost, use the env var to identify which store to load.
+// In production, use the actual hostname.
+function resolveStoreDomain(): string {
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return process.env.NEXT_PUBLIC_STORE_SUBDOMAIN || 'demoshop.ecom.app';
+  }
+  return host;
+}
+
 export function TemplateProvider({ children }: Readonly<{ children: ReactNode }>) {
   const { store, setStore } = useStorefrontStore();
   const [template, setTemplate] = useState<string>(store?.template || 'default');
 
   useEffect(() => {
-    // Always re-fetch on mount so template changes are reflected immediately
-    const host = window.location.hostname;
-    api.get(`/storefront/resolve?domain=${host}`)
+    const domain = resolveStoreDomain();
+    api.get(`/storefront/resolve?domain=${domain}`)
       .then((r) => {
         setStore(r.data.store);
         setTemplate(r.data.store.template || 'default');
       })
       .catch(() => {
-        // Fall back to cached template if offline
         if (store?.template) setTemplate(store.template);
       });
   }, []);
