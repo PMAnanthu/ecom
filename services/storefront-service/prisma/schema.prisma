@@ -6,7 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["storefront_svc"]
+  schemas  = ["store_svc"]
 }
 
 model Store {
@@ -18,5 +18,6 @@ model Store {
   published Boolean @default(false)
   template  String  @default("default")
   branding  Json    @default("{}")
-  @@schema("storefront_svc")
+
+  @@schema("store_svc")
 }
