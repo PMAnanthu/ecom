@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
+import { useStorefrontStore } from '@/lib/storefront-store';
 
 export interface Product {
   id: string;
@@ -18,6 +19,9 @@ export interface Category { id: string; name: string }
 const PAGE_SIZE = 16;
 
 export function useShopData() {
+  const { store } = useStorefrontStore();
+  const storeId = store?.id;
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
@@ -28,35 +32,43 @@ export function useShopData() {
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
 
+  // Fetch categories when storeId is available
   useEffect(() => {
-    api.get('/catalog/categories').then((r) => setCategories(r.data.categories)).finally(() => setLoading(false));
-  }, []);
+    if (!storeId) return;
+    api.get('/catalog/categories', { headers: { 'x-store-id': storeId } })
+      .then((r) => setCategories(r.data.categories))
+      .finally(() => setLoading(false));
+  }, [storeId]);
 
+  // Fetch products when storeId or filters change
   useEffect(() => {
+    if (!storeId) return;
     setPage(1);
     setProducts([]);
     setHasMore(true);
     api.get('/catalog/products', {
+      headers: { 'x-store-id': storeId },
       params: { search: search || undefined, category: category || undefined, page: 1, limit: PAGE_SIZE },
     }).then((r) => {
       setProducts(r.data.products);
       setTotal(r.data.total);
       setHasMore(r.data.products.length === PAGE_SIZE && r.data.total > PAGE_SIZE);
     }).catch(() => {});
-  }, [search, category]);
+  }, [storeId, search, category]);
 
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
+    if (loadingMore || !hasMore || !storeId) return;
     const nextPage = page + 1;
     setLoadingMore(true);
     api.get('/catalog/products', {
+      headers: { 'x-store-id': storeId },
       params: { search: search || undefined, category: category || undefined, page: nextPage, limit: PAGE_SIZE },
     }).then((r) => {
       setProducts((prev) => [...prev, ...r.data.products]);
       setPage(nextPage);
       setHasMore(r.data.products.length === PAGE_SIZE && r.data.total > (nextPage * PAGE_SIZE));
     }).catch(() => {}).finally(() => setLoadingMore(false));
-  }, [loadingMore, hasMore, page, search, category]);
+  }, [loadingMore, hasMore, page, search, category, storeId]);
 
   return { products, categories, search, setSearch, category, setCategory, loading, loadingMore, hasMore, total, loadMore };
 }
