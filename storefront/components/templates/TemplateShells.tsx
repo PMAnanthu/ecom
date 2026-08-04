@@ -77,13 +77,14 @@ export function SidebarShell({ children, sidebarContent }: Readonly<SidebarShell
         </div>
         <nav className="flex-1 p-4 flex flex-col gap-1 text-sm">
           {NAV_LINKS.map(l => <Link key={l.href} href={l.href} className="py-2 px-3 rounded hover:bg-neutral-100 text-neutral-700 font-medium">{l.label}</Link>)}
+          {/* Cart link in sidebar nav — always visible */}
+          <Link href="/cart" className="flex items-center justify-between py-2 px-3 rounded bg-neutral-900 text-white hover:bg-black mt-2">
+            <span>🛒 Cart</span>
+            {cartCount > 0 && <span className="bg-white text-black text-xs rounded-full px-1.5 font-bold">{cartCount}</span>}
+          </Link>
           {sidebarContent && <div className="mt-4 border-t pt-4">{sidebarContent}</div>}
         </nav>
         <div className="p-4 border-t flex flex-col gap-2 text-sm">
-          <Link href="/cart" className="flex items-center justify-between py-2 px-3 rounded bg-black text-white hover:bg-neutral-800">
-            <span>🛒 Cart</span>
-            {cartCount > 0 && <span className="bg-white text-black text-xs rounded-full px-1.5">{cartCount}</span>}
-          </Link>
           {user ? <button onClick={handleLogout} className="py-1 px-3 text-neutral-500 hover:text-black text-xs">Logout</button>
             : <Link href="/login" className="py-1 px-3 text-center text-neutral-500 hover:text-black text-xs">Sign in</Link>}
         </div>

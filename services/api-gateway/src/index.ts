@@ -37,7 +37,11 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway
 
 // Using app.all with wildcard keeps req.url = full path, so our rewrite works correctly
 
-// Public: auth
+// Protected auth routes (addresses, profile) — must be before public /api/auth/*
+app.all('/api/auth/addresses', ...mw(authenticate), forward(AUTH_URL, 'auth'));
+app.all('/api/auth/addresses/*', ...mw(authenticate), forward(AUTH_URL, 'auth'));
+
+// Public: auth (login/register/refresh)
 app.all('/api/auth', forward(AUTH_URL, 'auth'));
 app.all('/api/auth/*', forward(AUTH_URL, 'auth'));
 

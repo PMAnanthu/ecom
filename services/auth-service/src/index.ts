@@ -14,6 +14,7 @@ app.use(cookieParser());
 app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'auth-service' }));
 app.use('/', authRouter);
 app.use('/addresses', addressRouter);
+app.use('/user/addresses', addressRouter);
 
 app.listen(PORT, () => {
   console.log(`auth-service running on port ${PORT}`);
