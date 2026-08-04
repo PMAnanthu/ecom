@@ -6,11 +6,9 @@ import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { useRouter } from 'next/navigation';
 
-const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
-
 export function imgUrl(src: string) {
   if (!src) return '';
-  return src.startsWith('http') ? src : `${CATALOG_URL}${src}`;
+  return src.startsWith('http') ? src : src;
 }
 
 // ─── SIDEBAR SHELL ───────────────────────────────────────────────────────────

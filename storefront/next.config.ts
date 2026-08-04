@@ -7,6 +7,17 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV !== 'production',
 });
 
-const nextConfig: NextConfig = {};
+const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://localhost:3004';
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: `${CATALOG_URL}/uploads/:path*`,
+      },
+    ];
+  },
+};
 
 export default withSerwist(nextConfig);

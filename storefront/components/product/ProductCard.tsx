@@ -20,7 +20,9 @@ const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:300
 function productImageUrl(path: string): string {
   if (!path) return '';
   if (path.startsWith('http')) return path;
-  return `${CATALOG_URL}${path}`;
+  // Local uploads are proxied through storefront via next.config rewrites
+  // so /uploads/... works on any device on the network
+  return path;
 }
 
 export function ProductCard({ product }: Readonly<{ product: Product }>) {
