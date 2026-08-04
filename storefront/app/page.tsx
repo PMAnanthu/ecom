@@ -86,11 +86,25 @@ export default function HomePage() {
   if (template === 'sidebar') {
     return (
       <TemplateWrapper sidebar={<SidebarCategories />}>
-        <h2 className="text-xl font-bold mb-6">Featured Products</h2>
-        {grid('grid-cols-2 lg:grid-cols-3')}
-        <div className="mt-6 text-center">
-          <Link href="/products" className="text-sm underline text-neutral-500 hover:text-black">View all products →</Link>
+        {/* Hero banner — distinct from products page which has no banner */}
+        <div className="rounded-2xl bg-neutral-900 text-white p-8 mb-8 relative overflow-hidden">
+          {branding.heroBgImage && (
+            <div className="absolute inset-0 bg-cover bg-center opacity-30" style={{ backgroundImage: `url(${branding.heroBgImage})` }} />
+          )}
+          <div className="relative z-10">
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-2">Classical Ornaments</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">{branding.heroHeading || storeName}</h1>
+            <p className="text-neutral-400 text-sm mb-4">{branding.heroSubtext || 'Discover our curated collection'}</p>
+            <Link href="/products" className="inline-block bg-white text-black font-semibold text-sm px-5 py-2 rounded-full hover:bg-neutral-100">
+              Shop All →
+            </Link>
+          </div>
         </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg">Featured Products</h2>
+          <Link href="/products" className="text-xs text-neutral-400 hover:text-black underline">View all</Link>
+        </div>
+        {grid('grid-cols-2 lg:grid-cols-3')}
       </TemplateWrapper>
     );
   }
