@@ -16,6 +16,7 @@ const createSchema = z.object({
   stock: z.number().int().min(0).default(0),
   categoryId: z.string().optional(),
   tags: z.array(z.string()).default([]),
+  images: z.array(z.string()).default([]),
 });
 
 const updateSchema = z.object({
