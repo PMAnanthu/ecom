@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const STORE_SERVICE = process.env.NEXT_PUBLIC_STORE_URL || 'http://localhost:3003';
+const STORE_SERVICE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
 
 const HEADING_STYLES = [
   { value: 'dark', label: 'Dark Hero (black bg, white text)' },

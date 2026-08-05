@@ -70,6 +70,8 @@ app.all('/api/platform', ...mw(authenticate, requireRole('SUPERADMIN')), forward
 app.all('/api/platform/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 
 // Store: admin only
+// Store: admin only — upload must be before general store route
+app.all('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store/*', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 
