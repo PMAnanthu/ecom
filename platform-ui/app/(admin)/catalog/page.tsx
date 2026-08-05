@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[] }
 interface ImageEntry { file: File; preview: string; id: string }
 
-const CATALOG_SERVICE = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
+const CATALOG_SERVICE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
 
 function imgUrl(src: string) {
   if (!src) return '';
@@ -86,7 +86,8 @@ export default function CatalogPage() {
     const fd = new FormData();
     fd.append('image', file);
     const token = localStorage.getItem('accessToken');
-    await fetch(`${CATALOG_SERVICE}/products/${productId}/images`, {
+    const baseUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
+    await fetch(`${baseUrl}/api/catalog/products/${productId}/images`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token ?? ''}`, 'x-store-id': storeId ?? '', 'x-user-role': 'ADMIN' },
       body: fd,

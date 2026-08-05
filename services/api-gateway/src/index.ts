@@ -75,7 +75,8 @@ app.all('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), forward(
 app.all('/api/store', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store/*', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 
-// Catalog writes: admin only
+// Catalog writes: admin only — image upload must come before general catalog route
+app.all('/api/catalog/products/*/images', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 app.all('/api/catalog', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 app.all('/api/catalog/*', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 
