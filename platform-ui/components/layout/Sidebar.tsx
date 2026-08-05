@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 const superAdminLinks = [
   { href: '/super/dashboard', label: 'Dashboard' },
   { href: '/super/admins', label: 'Manage Admins' },
+  { href: '/super/templates', label: 'Templates' },
   { href: '/super/subscriptions', label: 'Subscriptions' },
 ];
 

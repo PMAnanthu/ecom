@@ -37,7 +37,14 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway
 
 // Using app.all with wildcard keeps req.url = full path, so our rewrite works correctly
 
-// Protected auth routes (addresses, profile) — must be before public /api/auth/*
+// Admin management (super-admin only) — protected before public /api/auth/*
+app.all('/api/auth/admin-mgmt', ...mw(authenticate, requireRole('SUPERADMIN')), forward(AUTH_URL, 'auth'));
+app.all('/api/auth/admin-mgmt/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(AUTH_URL, 'auth'));
+
+// Change own password — any authenticated user
+app.all('/api/auth/admin-mgmt/change-password', ...mw(authenticate), forward(AUTH_URL, 'auth'));
+
+// Protected auth routes (addresses, profile)
 app.all('/api/auth/addresses', ...mw(authenticate), forward(AUTH_URL, 'auth'));
 app.all('/api/auth/addresses/*', ...mw(authenticate), forward(AUTH_URL, 'auth'));
 

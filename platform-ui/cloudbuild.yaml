@@ -1,0 +1,14 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-ui:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://ecom-api-gateway-m6jmogmpra-ue.a.run.app/api'
+      - '.'
+    dir: 'platform-ui'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-ui:latest']
+images:
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-ui:latest'
