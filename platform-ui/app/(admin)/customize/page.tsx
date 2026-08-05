@@ -70,7 +70,7 @@ export default function CustomizePage() {
     const fd = new FormData();
     fd.append('file', file);
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${STORE_SERVICE}/upload`, {
+    const res = await fetch(`${STORE_SERVICE}/api/store/upload`, {
       method: 'POST', headers: { Authorization: `Bearer ${token ?? ''}` }, body: fd,
     });
     return (await res.json()).url as string;

@@ -59,7 +59,7 @@ export default function SettingsPage() {
     const fd = new FormData();
     fd.append('file', logoFile);
     const token = localStorage.getItem('accessToken');
-    const res = await fetch(`${STORE_SERVICE}/upload`, {
+    const res = await fetch(`${STORE_SERVICE}/api/store/upload`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token ?? ''}` },
       body: fd,
