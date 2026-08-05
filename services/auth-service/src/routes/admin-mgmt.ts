@@ -36,7 +36,7 @@ adminMgmtRouter.post('/', async (req: Request, res: Response) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-user-id': user.id, 'x-user-role': 'ADMIN' },
         body: JSON.stringify({ name: parsed.data.storeName, subdomain: parsed.data.subdomain }),
       });
-      if (storeRes.ok) store = (await storeRes.json()).store;
+      if (storeRes.ok) store = ((await storeRes.json()) as { store: unknown }).store;
     } catch { /* store creation is best-effort */ }
   }
 
