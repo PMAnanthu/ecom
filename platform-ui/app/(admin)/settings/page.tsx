@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +16,6 @@ interface Branding { logoUrl?: string; address?: string; city?: string; country?
 interface StoreTemplate { id: string; key: string; name: string; description?: string; enabled: boolean }
 
 export default function SettingsPage() {
-  const { storeId } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -30,19 +28,20 @@ export default function SettingsPage() {
   const [availableTemplates, setAvailableTemplates] = useState<StoreTemplate[]>([]);
 
   useEffect(() => {
-    Promise.all([
-      api.get('/store').then((r) => {
-        const s = r.data.store;
-        setStoreName(s.name || '');
-        setTemplate(s.template || 'default');
-        const b: Branding = typeof s.branding === 'object' ? s.branding : {};
-        setBranding({ currency: 'USD', ...b });
-        if (b.logoUrl) setLogoPreview(`${STORE_SERVICE}${b.logoUrl}`);
-      }),
-      api.get('/platform/templates').then((r) =>
-        setAvailableTemplates((r.data.templates as StoreTemplate[]).filter((t) => t.enabled))
-      ),
-    ]).catch(() => setError('Failed to load settings.')).finally(() => setLoading(false));
+    api.get('/store').then((r) => {
+      const s = r.data.store;
+      setStoreName(s.name || '');
+      setTemplate(s.template || 'default');
+      const b: Branding = typeof s.branding === 'object' ? s.branding : {};
+      setBranding({ currency: 'USD', ...b });
+      if (b.logoUrl) setLogoPreview(`${STORE_SERVICE}${b.logoUrl}`);
+    }).catch(() => setError('Failed to load store settings.'))
+      .finally(() => setLoading(false));
+
+    // Templates are optional — load separately, don't block page
+    api.get('/platform/templates')
+      .then((r) => setAvailableTemplates((r.data.templates as StoreTemplate[]).filter((t) => t.enabled)))
+      .catch(() => {}); // templates may not be accessible to all roles
   }, []);
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,7 +70,6 @@ export default function SettingsPage() {
 
   const save = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!storeId) { setError('Store not found — please re-login.'); return; }
     setSaving(true);
     setError('');
     setSuccess(false);

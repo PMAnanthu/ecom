@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,7 +28,6 @@ interface HomeConfig {
 }
 
 export default function CustomizePage() {
-  const { storeId } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -80,7 +78,6 @@ export default function CustomizePage() {
 
   const save = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!storeId) return;
     setSaving(true);
     try {
       const updated = { ...config };
