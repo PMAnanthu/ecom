@@ -11,6 +11,7 @@ interface User {
 interface AuthState {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   storeId: string | null;
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setStoreId: (storeId: string) => void;
@@ -22,33 +23,32 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       storeId: null,
       setAuth: (user, accessToken, refreshToken) => {
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
-        set({ user, accessToken });
+        set({ user, accessToken, refreshToken });
       },
       setStoreId: (storeId) => set({ storeId }),
       clearAuth: () => {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        set({ user: null, accessToken: null, storeId: null });
+        set({ user: null, accessToken: null, refreshToken: null, storeId: null });
       },
     }),
-    { name: 'auth-store',
-      partialize: (s) => ({ user: s.user, accessToken: s.accessToken, storeId: s.storeId }),
+    {
+      name: 'auth-store',
+      partialize: (s) => ({
+        user: s.user,
+        accessToken: s.accessToken,
+        refreshToken: s.refreshToken,
+        storeId: s.storeId,
+      }),
       onRehydrateStorage: () => (state) => {
+        // Re-sync tokens to localStorage on page load so api interceptor works
         if (state?.accessToken) localStorage.setItem('accessToken', state.accessToken);
-        if (state?.storeId) {
-          // Re-sync storeId into the raw key the api interceptor reads
-          const raw = localStorage.getItem('auth-store');
-          if (!raw) return;
-          try {
-            const parsed = JSON.parse(raw);
-            parsed.state.storeId = state.storeId;
-            localStorage.setItem('auth-store', JSON.stringify(parsed));
-          } catch { /* ignore */ }
-        }
+        if (state?.refreshToken) localStorage.setItem('refreshToken', state.refreshToken);
       },
     }
   )
