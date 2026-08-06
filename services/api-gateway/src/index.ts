@@ -1,7 +1,38 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import httpProxy from 'http-proxy';
+import multer from 'multer';
 import { authenticate, requireRole } from './middleware/auth';
+import { Storage } from '@google-cloud/storage';
+
+const GCS_BUCKET = process.env.GCS_BUCKET || 'ecom-uploads-e-com-504518';
+const USE_GCS = process.env.NODE_ENV === 'production' || !!process.env.GCS_BUCKET;
+const memUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+async function handleUpload(req: Request, res: Response) {
+  if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
+  try {
+    if (USE_GCS) {
+      const storage = new Storage();
+      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const file = storage.bucket(GCS_BUCKET).file(filename);
+      await file.save(req.file.buffer, { contentType: req.file.mimetype, public: true });
+      res.json({ url: `https://storage.googleapis.com/${GCS_BUCKET}/${filename}` });
+    } else {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const crypto = await import('node:crypto');
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      fs.mkdirSync(uploadDir, { recursive: true });
+      const filename = crypto.randomBytes(16).toString('hex');
+      fs.writeFileSync(path.join(uploadDir, filename), req.file.buffer);
+      res.json({ url: `/uploads/${filename}` });
+    }
+  } catch (err) {
+    console.error('Upload error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -69,13 +100,18 @@ app.get('/api/platform/templates', forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 
-// Store: admin only
-// Store: admin only — upload must be before general store route
+// Store: admin only — upload handled directly in gateway (multipart proxy issue)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.post('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), memUpload.single('file') as any, (req: Request, res: Response) => handleUpload(req, res));
 app.all('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store/*', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 
-// Catalog writes: admin only — image upload must come before general catalog route
+// Catalog product image upload — handled directly in gateway
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.post('/api/catalog/products/:id/images', ...mw(authenticate, requireRole('ADMIN')), memUpload.single('image') as any, (req: Request, res: Response) => handleUpload(req, res));
+
+// Catalog writes: admin only
 app.all('/api/catalog/products/*/images', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 app.all('/api/catalog', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));
 app.all('/api/catalog/*', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));

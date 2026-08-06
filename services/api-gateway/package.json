@@ -7,12 +7,15 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.21.0",
     "@types/http-proxy": "^1.17.17",
+    "@types/multer": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "http-proxy": "^1.18.1",
     "http-proxy-middleware": "^3.0.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
