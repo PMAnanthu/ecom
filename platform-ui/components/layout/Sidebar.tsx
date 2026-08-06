@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, Users, CreditCard, LayoutTemplate,
   LogOut, ShoppingBag, ExternalLink, ChevronDown, ChevronRight,
-  Home, Info, ShoppingCart, FileText,
+  Home, Info, ShoppingCart, FileText, Navigation,
 } from 'lucide-react';
 
 const superAdminLinks = [
@@ -25,6 +25,7 @@ const customizeSubLinks = [
   { href: '/customize/about', label: 'About', icon: Info },
   { href: '/customize/products', label: 'Products', icon: ShoppingCart },
   { href: '/customize/orders', label: 'Orders', icon: FileText },
+  { href: '/customize/navbar', label: 'Navbar', icon: Navigation },
 ];
 
 const adminLinks = [

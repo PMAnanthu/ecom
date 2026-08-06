@@ -8,10 +8,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+const SOCIAL_FIELDS = [
+  { key: 'contactEmail', label: 'Email', placeholder: 'hello@yourstore.com', icon: '✉️' },
+  { key: 'contactPhone', label: 'Phone / WhatsApp', placeholder: '+91 98765 43210', icon: '📱' },
+  { key: 'socialWhatsapp', label: 'WhatsApp Link', placeholder: 'https://wa.me/919876543210', icon: '💬' },
+  { key: 'socialInstagram', label: 'Instagram', placeholder: 'https://instagram.com/yourstore', icon: '📷' },
+  { key: 'socialFacebook', label: 'Facebook', placeholder: 'https://facebook.com/yourstore', icon: '👥' },
+  { key: 'socialYoutube', label: 'YouTube', placeholder: 'https://youtube.com/@yourstore', icon: '▶️' },
+  { key: 'socialX', label: 'X (Twitter)', placeholder: 'https://x.com/yourstore', icon: '𝕏' },
+];
+
+type ContactState = Record<string, string>;
+
 export default function CustomizeAboutPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [about, setAbout] = useState({ title: '', description: '', email: '', phone: '', address: '', hours: '' });
+  const [about, setAbout] = useState({ title: '', description: '', businessHours: '' });
+  const [contact, setContact] = useState<ContactState>({});
 
   useEffect(() => {
     api.get('/store').then((r) => {
@@ -19,11 +32,11 @@ export default function CustomizeAboutPage() {
       setAbout({
         title: b.aboutTitle || '',
         description: b.aboutDescription || '',
-        email: b.contactEmail || '',
-        phone: b.phone || '',
-        address: b.address ? `${b.address}${b.city ? ', ' + b.city : ''}${b.country ? ', ' + b.country : ''}` : '',
-        hours: b.businessHours || '',
+        businessHours: b.businessHours || '',
       });
+      const c: ContactState = {};
+      SOCIAL_FIELDS.forEach(f => { c[f.key] = b[f.key] || ''; });
+      setContact(c);
     }).catch(() => {});
   }, []);
 
@@ -38,8 +51,8 @@ export default function CustomizeAboutPage() {
           ...existing,
           aboutTitle: about.title,
           aboutDescription: about.description,
-          contactEmail: about.email,
-          businessHours: about.hours,
+          businessHours: about.businessHours,
+          ...contact,
         },
       });
       setSuccess(true);
@@ -51,29 +64,47 @@ export default function CustomizeAboutPage() {
     <div className="max-w-xl">
       <h1 className="text-2xl font-bold mb-6">Customize About Page</h1>
       <form onSubmit={save} className="space-y-5">
+
         <Card>
           <CardHeader><CardTitle className="text-base">About Section</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-1"><Label>Page Title</Label>
-              <Input value={about.title} placeholder="About Us" onChange={e => setAbout({ ...about, title: e.target.value })} /></div>
-            <div className="space-y-1"><Label>Description</Label>
-              <Textarea value={about.description} placeholder="Tell your story…" rows={5}
-                onChange={e => setAbout({ ...about, description: e.target.value })} /></div>
+            <div className="space-y-1">
+              <Label>Page Title</Label>
+              <Input value={about.title} placeholder="About Us"
+                onChange={e => setAbout({ ...about, title: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Story / Description</Label>
+              <Textarea value={about.description} placeholder="Tell your customers about your store, your journey, what makes you special…" rows={5}
+                onChange={e => setAbout({ ...about, description: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label>Business Hours</Label>
+              <Input value={about.businessHours} placeholder="Mon–Sat, 9am–7pm"
+                onChange={e => setAbout({ ...about, businessHours: e.target.value })} />
+            </div>
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader><CardTitle className="text-base">Contact Info</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1"><Label>Contact Email</Label>
-              <Input type="email" value={about.email} placeholder="hello@yourstore.com"
-                onChange={e => setAbout({ ...about, email: e.target.value })} /></div>
-            <div className="space-y-1"><Label>Business Hours</Label>
-              <Input value={about.hours} placeholder="Mon–Fri, 9am–6pm"
-                onChange={e => setAbout({ ...about, hours: e.target.value })} /></div>
+          <CardHeader><CardTitle className="text-base">Contact & Social Media</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {SOCIAL_FIELDS.map(({ key, label, placeholder, icon }) => (
+              <div key={key} className="space-y-1">
+                <Label className="flex items-center gap-1">
+                  <span>{icon}</span> {label}
+                </Label>
+                <Input value={contact[key] || ''} placeholder={placeholder}
+                  onChange={e => setContact({ ...contact, [key]: e.target.value })} />
+              </div>
+            ))}
           </CardContent>
         </Card>
+
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
-        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save About Page'}</Button>
+        <Button type="submit" disabled={saving} className="w-full">
+          {saving ? 'Saving…' : 'Save About Page'}
+        </Button>
       </form>
     </div>
   );
