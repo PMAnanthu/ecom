@@ -29,8 +29,8 @@ async function handleUpload(req: Request, res: Response) {
       );
       if (!uploadRes.ok) {
         const err = await uploadRes.text();
-        console.error('GCS error:', err);
-        throw new Error('GCS upload failed');
+        console.error('GCS error status:', uploadRes.status, 'body:', err.slice(0, 500));
+        throw new Error(`GCS upload failed: ${uploadRes.status}`);
       }
       res.json({ url: `https://storage.googleapis.com/${GCS_BUCKET}/${filename}` });
     } else {
