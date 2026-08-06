@@ -1,13 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import multer from 'multer';
-import path from 'path';
 import { z } from 'zod';
+import { upload, saveUpload } from '../lib/upload';
 
 const prisma = new PrismaClient();
 export const storeRouter = Router();
-
-const upload = multer({ dest: path.join(__dirname, '../../uploads') });
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -55,9 +52,12 @@ storeRouter.patch('/', async (req: Request, res: Response) => {
 });
 
 storeRouter.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
-  if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
-  const url = `/uploads/${req.file.filename}`;
-  res.json({ url });
+  try {
+    const url = await saveUpload(req, res);
+    res.json({ url });
+  } catch {
+    res.status(400).json({ error: 'No file uploaded' });
+  }
 });
 
 storeRouter.patch('/publish', async (req: Request, res: Response) => {

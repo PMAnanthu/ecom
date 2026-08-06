@@ -1,13 +1,10 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import multer from 'multer';
-import path from 'node:path';
 import { z } from 'zod';
+import { upload, saveUpload } from '../lib/upload';
 
 const prisma = new PrismaClient();
 export const productRouter = Router();
-
-const upload = multer({ dest: path.join(__dirname, '../../uploads'), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const createSchema = z.object({
   name: z.string().min(1),
@@ -98,7 +95,8 @@ productRouter.post('/:id/images', upload.single('image'), async (req: Request, r
   const product = await prisma.product.findUnique({ where: { id: req.params.id } });
   if (!product) { res.status(404).json({ error: 'Product not found' }); return; }
 
-  const images = [...(product.images as string[]), `/uploads/${req.file.filename}`];
+  const imageUrl = await saveUpload(req, res);
+  const images = [...(product.images as string[]), imageUrl];
   const updated = await prisma.product.update({ where: { id: req.params.id }, data: { images } });
   res.json({ product: updated });
 });
