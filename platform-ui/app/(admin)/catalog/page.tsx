@@ -218,7 +218,13 @@ export default function CatalogPage() {
               <div className="space-y-1">
                 <Label>Category</Label>
                 <Select value={form.categoryId} onValueChange={(v) => v && setForm({ ...form, categoryId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select category…" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category…">
+                      {form.categoryId
+                        ? (categories.find(c => c.id === form.categoryId)?.name || 'Select category…')
+                        : 'Select category…'}
+                    </SelectValue>
+                  </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
