@@ -1,0 +1,37 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-auth-service:latest', '.']
+    dir: 'services/auth-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-auth-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-catalog-service:latest', '.']
+    dir: 'services/catalog-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-catalog-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-order-service:latest', '.']
+    dir: 'services/order-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-order-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-service:latest', '.']
+    dir: 'services/platform-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-store-service:latest', '.']
+    dir: 'services/store-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-store-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-storefront-service:latest', '.']
+    dir: 'services/storefront-service'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-storefront-service:latest']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-api-gateway:latest', '.']
+    dir: 'services/api-gateway'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-api-gateway:latest']
+timeout: 1800s
