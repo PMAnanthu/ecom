@@ -32,14 +32,14 @@ orderRouter.post('/checkout', async (req: Request, res: Response) => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
 
   // Prefer items sent directly from client; fall back to Redis cart
-  let cartItems = parsed.data.items;
-  if (!cartItems || cartItems.length === 0) {
+  let cartItems = parsed.data.items ?? [];
+  if (cartItems.length === 0) {
     const cartKey = `cart:${userId}`;
     const cartData = await redis.get(cartKey);
     if (!cartData) { res.status(400).json({ error: 'Cart is empty' }); return; }
     const cart = JSON.parse(cartData);
     if (!cart.items?.length) { res.status(400).json({ error: 'Cart is empty' }); return; }
-    cartItems = cart.items;
+    cartItems = cart.items as { productId: string; name: string; price: number; qty: number }[];
   }
 
   const total = cartItems.reduce((sum: number, i: { price: number; qty: number }) => sum + i.price * i.qty, 0);
