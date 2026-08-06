@@ -211,7 +211,7 @@ export default function CatalogPage() {
             <form onSubmit={saveCategory} className="space-y-3">
               <Input placeholder="Category name" value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)} required autoFocus />
-              <Select value={newCategoryParent} onValueChange={v => setNewCategoryParent(v === '__none__' ? '' : v)}>
+              <Select value={newCategoryParent} onValueChange={(v: string) => setNewCategoryParent(v === '__none__' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Parent category (optional)">
                     {newCategoryParent ? (categories.find(c => c.id === newCategoryParent)?.name || 'Select parent…') : 'No parent (top-level)'}
