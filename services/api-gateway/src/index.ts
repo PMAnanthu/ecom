@@ -20,7 +20,7 @@ async function handleUpload(req: Request, res: Response) {
       const { access_token } = await tokenRes.json() as { access_token: string };
       const filename = `${Date.now()}-${req.file.originalname.replace(/[^a-z0-9.]/gi, '_')}`;
       const uploadRes = await fetch(
-        `https://storage.googleapis.com/upload/storage/v1/b/${GCS_BUCKET}/o?uploadType=media&name=${filename}&predefinedAcl=publicRead`,
+        `https://storage.googleapis.com/upload/storage/v1/b/${GCS_BUCKET}/o?uploadType=media&name=${filename}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': req.file.mimetype },

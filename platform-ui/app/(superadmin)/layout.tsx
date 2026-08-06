@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Menu, ShieldCheck } from 'lucide-react';
 
 export default function SuperAdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user } = useAuthStore();
@@ -32,11 +33,12 @@ export default function SuperAdminLayout({ children }: Readonly<{ children: Reac
       <div className="flex-1 flex flex-col min-w-0">
         <header className="lg:hidden sticky top-0 z-20 bg-white border-b flex items-center justify-between px-4 h-14 shrink-0">
           <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-md hover:bg-neutral-100" aria-label="Open menu">
-            <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" d="M3 6h18M3 12h18M3 18h18"/>
-            </svg>
+            <Menu size={20} />
           </button>
-          <span className="font-semibold text-sm">ecom Super Admin</span>
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={18} />
+            <span className="font-semibold text-sm">Super Admin</span>
+          </div>
           <div className="w-8" />
         </header>
         <main className="flex-1 p-4 lg:p-8 overflow-auto">{children}</main>

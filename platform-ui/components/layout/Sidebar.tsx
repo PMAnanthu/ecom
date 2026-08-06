@@ -5,21 +5,26 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  LayoutDashboard, Palette, Package, ClipboardList,
+  Globe, Settings, Users, CreditCard, LayoutTemplate,
+  LogOut, ShoppingBag,
+} from 'lucide-react';
 
 const superAdminLinks = [
-  { href: '/super/dashboard', label: '📊 Dashboard' },
-  { href: '/super/admins', label: '👥 Manage Admins' },
-  { href: '/super/templates', label: '🎨 Templates' },
-  { href: '/super/subscriptions', label: '💳 Subscriptions' },
+  { href: '/super/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/super/admins', label: 'Manage Admins', icon: Users },
+  { href: '/super/templates', label: 'Templates', icon: LayoutTemplate },
+  { href: '/super/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ];
 
 const adminLinks = [
-  { href: '/dashboard', label: '🏠 Dashboard' },
-  { href: '/customize', label: '🎨 Customize Home' },
-  { href: '/catalog', label: '📦 Catalog' },
-  { href: '/orders', label: '📋 Orders' },
-  { href: '/store', label: '🌐 Domain & Publish' },
-  { href: '/settings', label: '⚙️ Shop Settings' },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/customize', label: 'Customize Home', icon: Palette },
+  { href: '/catalog', label: 'Catalog', icon: Package },
+  { href: '/orders', label: 'Orders', icon: ClipboardList },
+  { href: '/store', label: 'Domain & Publish', icon: Globe },
+  { href: '/settings', label: 'Shop Settings', icon: Settings },
 ];
 
 interface SidebarProps { onClose?: () => void }
@@ -35,29 +40,50 @@ export function Sidebar({ onClose }: Readonly<SidebarProps>) {
   };
 
   return (
-    <aside className="w-56 h-full min-h-screen bg-neutral-900 text-white flex flex-col p-4 gap-1">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-lg font-bold">ecom.app</span>
+    <aside className="w-56 h-full min-h-screen bg-neutral-900 text-white flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-neutral-800">
+        <div className="flex items-center gap-2">
+          <ShoppingBag size={20} className="text-white" />
+          <span className="font-bold text-base">ecom.app</span>
+        </div>
         {onClose && (
-          <button onClick={onClose} className="lg:hidden text-neutral-400 hover:text-white p-1" aria-label="Close">✕</button>
+          <button onClick={onClose} className="lg:hidden text-neutral-400 hover:text-white p-1" aria-label="Close">
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+          </button>
         )}
       </div>
-      <div className="text-xs text-neutral-400 uppercase mb-2">
-        {user?.role === 'SUPERADMIN' ? 'Super Admin' : 'Admin'}
+
+      {/* Role badge */}
+      <div className="px-4 py-2">
+        <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">
+          {user?.role === 'SUPERADMIN' ? 'Super Admin' : 'Admin'}
+        </span>
       </div>
-      {links.map((l) => (
-        <Link key={l.href} href={l.href}
-          onClick={onClose}
-          className="text-sm hover:text-white text-neutral-300 py-2 px-2 rounded hover:bg-neutral-800 transition-colors">
-          {l.label}
-        </Link>
-      ))}
-      <div className="flex-1" />
-      <Separator className="bg-neutral-700" />
-      <div className="text-xs text-neutral-400 truncate pb-1">{user?.email}</div>
-      <Button variant="outline" size="sm" onClick={handleLogout} className="text-neutral-300 border-neutral-700 hover:bg-neutral-800">
-        Log out
-      </Button>
+
+      {/* Nav links */}
+      <nav className="flex-1 px-2 pb-2 flex flex-col gap-0.5">
+        {links.map(({ href, label, icon: Icon }) => (
+          <Link key={href} href={href} onClick={onClose}
+            className="flex items-center gap-3 text-sm text-neutral-300 hover:text-white py-2 px-3 rounded-lg hover:bg-neutral-800 transition-colors">
+            <Icon size={16} className="shrink-0" />
+            {label}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-2 pb-3">
+        <Separator className="bg-neutral-800 mb-3" />
+        <p className="text-[11px] text-neutral-500 truncate px-3 mb-2">{user?.email}</p>
+        <button onClick={handleLogout}
+          className="flex items-center gap-2 w-full text-sm text-neutral-400 hover:text-white py-2 px-3 rounded-lg hover:bg-neutral-800 transition-colors">
+          <LogOut size={15} />
+          Log out
+        </button>
+      </div>
     </aside>
   );
 }
