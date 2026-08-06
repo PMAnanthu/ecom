@@ -5,6 +5,11 @@ import { usePathname } from 'next/navigation';
 import { useTemplate } from '@/lib/template-context';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
+import {
+  SiWhatsapp, SiInstagram, SiFacebook, SiYoutube, SiX,
+} from 'react-icons/si';
+import { MdEmail, MdPhone } from 'react-icons/md';
+import type { IconType } from 'react-icons';
 
 function useStorePath() {
   const pathname = usePathname();
@@ -12,14 +17,16 @@ function useStorePath() {
   return match ? `/s/${match[1]}` : '';
 }
 
-const SOCIAL_ICONS: Record<string, { icon: string; label: string }> = {
-  contactEmail:    { icon: '✉️', label: 'Email' },
-  contactPhone:    { icon: '📱', label: 'Phone' },
-  socialWhatsapp:  { icon: '💬', label: 'WhatsApp' },
-  socialInstagram: { icon: '📷', label: 'Instagram' },
-  socialFacebook:  { icon: '👥', label: 'Facebook' },
-  socialYoutube:   { icon: '▶️', label: 'YouTube' },
-  socialX:         { icon: '𝕏', label: 'X / Twitter' },
+interface SocialMeta { label: string; bg: string; Icon: IconType }
+
+const SOCIAL_META: Record<string, SocialMeta> = {
+  contactEmail:    { label: 'Email',     bg: '#EA4335', Icon: MdEmail },
+  contactPhone:    { label: 'Phone',     bg: '#22C55E', Icon: MdPhone },
+  socialWhatsapp:  { label: 'WhatsApp',  bg: '#25D366', Icon: SiWhatsapp },
+  socialInstagram: { label: 'Instagram', bg: '#E1306C', Icon: SiInstagram },
+  socialFacebook:  { label: 'Facebook',  bg: '#1877F2', Icon: SiFacebook },
+  socialYoutube:   { label: 'YouTube',   bg: '#FF0000', Icon: SiYoutube },
+  socialX:         { label: 'X',         bg: '#000000', Icon: SiX },
 };
 
 export default function AboutPage() {
@@ -31,9 +38,9 @@ export default function AboutPage() {
 
   const title = b.aboutTitle || store?.name || 'About Us';
   const description = b.aboutDescription || `Welcome to ${store?.name || 'our store'}. We are dedicated to offering quality products and an excellent shopping experience.`;
-  const hasSocial = Object.keys(SOCIAL_ICONS).some(k => b[k]);
+  const socialEntries = Object.entries(SOCIAL_META).filter(([key]) => !!b[key]);
 
-  const socialLink = (key: string, value: string) => {
+  const socialHref = (key: string, value: string) => {
     if (key === 'contactEmail') return `mailto:${value}`;
     if (key === 'contactPhone') return `tel:${value}`;
     return value;
@@ -51,10 +58,8 @@ export default function AboutPage() {
         {!isCard && <h1 className="text-3xl font-bold mb-8">{title}</h1>}
 
         <div className={isCard ? 'bg-white rounded-2xl shadow p-8 space-y-6' : 'space-y-6'}>
-          {/* Description */}
           <p className="text-neutral-600 leading-relaxed whitespace-pre-wrap">{description}</p>
 
-          {/* Business Hours */}
           {b.businessHours && (
             <div className={isCard ? 'border-t pt-6' : ''}>
               <h2 className="font-semibold text-lg mb-2">Business Hours</h2>
@@ -62,27 +67,23 @@ export default function AboutPage() {
             </div>
           )}
 
-          {/* Contact & Social Media */}
-          {hasSocial && (
+          {socialEntries.length > 0 && (
             <div className={isCard ? 'border-t pt-6' : ''}>
-              <h2 className="font-semibold text-lg mb-3">Contact Us</h2>
+              <h2 className="font-semibold text-lg mb-4">Contact Us</h2>
               <div className="flex flex-wrap gap-3">
-                {Object.entries(SOCIAL_ICONS).map(([key, { icon, label }]) => {
-                  const val = b[key];
-                  if (!val) return null;
-                  return (
-                    <a key={key} href={socialLink(key, val)} target="_blank" rel="noopener noreferrer"
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-medium transition-colors hover:shadow ${isCard ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100' : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100'}`}>
-                      <span>{icon}</span>
-                      <span>{label}</span>
-                    </a>
-                  );
-                })}
+                {socialEntries.map(([key, { label, bg, Icon }]) => (
+                  <a key={key} href={socialHref(key, b[key])}
+                    target="_blank" rel="noopener noreferrer"
+                    title={label} aria-label={label}
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-white hover:scale-110 transition-transform shadow-sm"
+                    style={{ backgroundColor: bg }}>
+                    <Icon size={20} />
+                  </a>
+                ))}
               </div>
             </div>
           )}
 
-          {/* Address */}
           {(b.address || b.city) && (
             <div className={isCard ? 'border-t pt-6' : ''}>
               <p className="text-neutral-600">📍 {[b.address, b.city, b.country].filter(Boolean).join(', ')}</p>
