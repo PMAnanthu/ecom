@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { Separator } from '@/components/ui/separator';
@@ -9,7 +9,8 @@ import { api } from '@/lib/api';
 import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, Users, CreditCard, LayoutTemplate,
-  LogOut, ShoppingBag, ExternalLink,
+  LogOut, ShoppingBag, ExternalLink, ChevronDown, ChevronRight,
+  Home, Info, ShoppingCart, FileText,
 } from 'lucide-react';
 
 const superAdminLinks = [
@@ -19,9 +20,15 @@ const superAdminLinks = [
   { href: '/super/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ];
 
+const customizeSubLinks = [
+  { href: '/customize', label: 'Home', icon: Home },
+  { href: '/customize/about', label: 'About', icon: Info },
+  { href: '/customize/products', label: 'Products', icon: ShoppingCart },
+  { href: '/customize/orders', label: 'Orders', icon: FileText },
+];
+
 const adminLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/customize', label: 'Customize Home', icon: Palette },
   { href: '/catalog', label: 'Catalog', icon: Package },
   { href: '/orders', label: 'Orders', icon: ClipboardList },
   { href: '/store', label: 'Domain & Publish', icon: Globe },
@@ -36,7 +43,12 @@ interface SidebarProps { onClose?: () => void }
 export function Sidebar({ onClose }: Readonly<SidebarProps>) {
   const { user, clearAuth } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const [subdomain, setSubdomain] = useState<string | null>(null);
+  const [customizeOpen, setCustomizeOpen] = useState(
+    pathname.startsWith('/customize')
+  );
+
   const links = user?.role === 'SUPERADMIN' ? superAdminLinks : adminLinks;
 
   useEffect(() => {
@@ -45,9 +57,14 @@ export function Sidebar({ onClose }: Readonly<SidebarProps>) {
     }
   }, [user]);
 
-  const handleLogout = () => { clearAuth(); router.push('/login'); };
+  useEffect(() => {
+    if (pathname.startsWith('/customize')) setCustomizeOpen(true);
+  }, [pathname]);
 
+  const handleLogout = () => { clearAuth(); router.push('/login'); };
   const storefrontHref = subdomain ? `${STOREFRONT_BASE}/s/${subdomain}` : null;
+
+  const isActive = (href: string) => pathname === href;
 
   return (
     <aside className="w-56 h-full min-h-screen bg-neutral-900 text-white flex flex-col">
@@ -71,10 +88,44 @@ export function Sidebar({ onClose }: Readonly<SidebarProps>) {
         </span>
       </div>
 
-      <nav className="flex-1 px-2 pb-2 flex flex-col gap-0.5">
+      <nav className="flex-1 px-2 pb-2 flex flex-col gap-0.5 overflow-y-auto">
+        {/* Dashboard first */}
+        {user?.role !== 'SUPERADMIN' && (
+          <Link href="/dashboard" onClick={onClose}
+            className={`flex items-center gap-3 text-sm py-2 px-3 rounded-lg transition-colors ${isActive('/dashboard') ? 'bg-neutral-700 text-white' : 'text-neutral-300 hover:text-white hover:bg-neutral-800'}`}>
+            <LayoutDashboard size={16} className="shrink-0" />
+            Dashboard
+          </Link>
+        )}
+
+        {user?.role !== 'SUPERADMIN' && (
+          <div>
+            {/* Customize expandable menu */}
+            <button
+              onClick={() => setCustomizeOpen(!customizeOpen)}
+              className={`flex items-center gap-3 w-full text-sm py-2 px-3 rounded-lg transition-colors ${pathname.startsWith('/customize') ? 'bg-neutral-700 text-white' : 'text-neutral-300 hover:text-white hover:bg-neutral-800'}`}>
+              <Palette size={16} className="shrink-0" />
+              <span className="flex-1 text-left">Customize</span>
+              {customizeOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </button>
+            {customizeOpen && (
+              <div className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-neutral-700 pl-3">
+                {customizeSubLinks.map(({ href, label, icon: Icon }) => (
+                  <Link key={href} href={href} onClick={onClose}
+                    className={`flex items-center gap-2 text-xs py-1.5 px-2 rounded-lg transition-colors ${isActive(href) ? 'bg-neutral-700 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'}`}>
+                    <Icon size={13} className="shrink-0" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Rest of admin links */}
         {links.map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} onClick={onClose}
-            className="flex items-center gap-3 text-sm text-neutral-300 hover:text-white py-2 px-3 rounded-lg hover:bg-neutral-800 transition-colors">
+            className={`flex items-center gap-3 text-sm py-2 px-3 rounded-lg transition-colors ${isActive(href) ? 'bg-neutral-700 text-white' : 'text-neutral-300 hover:text-white hover:bg-neutral-800'}`}>
             <Icon size={16} className="shrink-0" />
             {label}
           </Link>
