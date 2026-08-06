@@ -30,17 +30,34 @@ const updateSchema = z.object({
 
 productRouter.get('/', async (req: Request, res: Response) => {
   const storeId = req.headers['x-store-id'] as string | undefined;
-  const { category, search, tag, page = '1', limit = '20' } = req.query;
+  const { category, search, tag, sort, page = '1', limit = '20' } = req.query;
 
   const where: Record<string, unknown> = {};
   if (storeId) where.storeId = storeId;
-  if (category) where.categoryId = category;
   if (search) where.name = { contains: search as string, mode: 'insensitive' };
   if (tag) where.tags = { has: tag as string };
 
+  if (category) {
+    // Include the category and all its descendants
+    const allCats = await prisma.category.findMany({ where: storeId ? { storeId } : {} });
+    const ids = new Set<string>();
+    const addWithChildren = (id: string) => {
+      ids.add(id);
+      allCats.filter(c => c.parentId === id).forEach(c => addWithChildren(c.id));
+    };
+    addWithChildren(category as string);
+    where.categoryId = { in: [...ids] };
+  }
+
+  let orderBy: Record<string, string> = { createdAt: 'desc' };
+  if (sort === 'price_asc') orderBy = { price: 'asc' };
+  else if (sort === 'price_desc') orderBy = { price: 'desc' };
+  else if (sort === 'name_asc') orderBy = { name: 'asc' };
+  else if (sort === 'newest') orderBy = { createdAt: 'desc' };
+
   const skip = (Number.parseInt(page as string, 10) - 1) * Number.parseInt(limit as string, 10);
   const [products, total] = await Promise.all([
-    prisma.product.findMany({ where, include: { category: true }, skip, take: Number.parseInt(limit as string, 10), orderBy: { createdAt: 'desc' } }),
+    prisma.product.findMany({ where, include: { category: true }, skip, take: Number.parseInt(limit as string, 10), orderBy }),
     prisma.product.count({ where }),
   ]);
 

@@ -10,13 +10,16 @@ datasource db {
 }
 
 model Category {
-  id        String    @id @default(uuid())
+  id        String     @id @default(uuid())
   storeId   String
   name      String
+  parentId  String?
+  parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryTree")
   products  Product[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime   @default(now())
 
-  @@unique([storeId, name])
+  @@unique([storeId, name, parentId])
   @@schema("catalog_svc")
 }
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type React from 'react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[]; categoryId?: string; category?: { id: string; name: string }; specs?: Spec[] }
-interface Category { id: string; name: string }
+interface Category { id: string; name: string; parentId: string | null; children?: Category[] }
 interface Spec { key: string; value: string }
 interface ImageEntry { file: File; preview: string; id: string }
 
@@ -63,19 +64,24 @@ export default function CatalogPage() {
   const { storeId } = useAuthStore();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [catTree, setCatTree] = useState<Category[]>([]);
   const [mode, setMode] = useState<'idle' | 'add' | 'edit' | 'add-category'>('idle');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<FormState>(emptyForm);
   const [newCategory, setNewCategory] = useState('');
+  const [newCategoryParent, setNewCategoryParent] = useState('');
   const [images, setImages] = useState<ImageEntry[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
   const [specs, setSpecs] = useState<Spec[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => api.get('/catalog/products').then((r) => setProducts(r.data.products)).catch(() => {});
-  const loadCategories = () => api.get('/catalog/categories').then((r) => setCategories(r.data.categories)).catch(() => {});
+  const loadCategories = () => api.get('/catalog/categories').then((r) => {
+    setCategories(r.data.categories);
+    setCatTree(r.data.tree || []);
+  }).catch(() => {});
 
   useEffect(() => { load(); loadCategories(); }, []);
 
@@ -119,8 +125,12 @@ export default function CatalogPage() {
     e.preventDefault();
     if (!newCategory.trim()) return;
     try {
-      await api.post('/catalog/categories', { name: newCategory.trim() });
+      await api.post('/catalog/categories', {
+        name: newCategory.trim(),
+        parentId: newCategoryParent || null,
+      });
       setNewCategory('');
+      setNewCategoryParent('');
       setMode('idle');
       await loadCategories();
     } catch { setError('Failed to create category'); }
@@ -176,15 +186,21 @@ export default function CatalogPage() {
         </div>
       </div>
 
-      {/* Categories */}
-      {categories.length > 0 && (
+      {/* Categories tree */}
+      {catTree.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {categories.map((c) => (
-            <div key={c.id} className="flex items-center gap-1 bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full">
-              {c.name}
-              <button onClick={() => delCategory(c.id)} className="text-neutral-400 hover:text-red-500 ml-1">×</button>
-            </div>
-          ))}
+          {(function renderTree(nodes: Category[], depth: number): React.ReactNode {
+            return nodes.map(c => (
+              <span key={c.id} className="inline-flex flex-col gap-1">
+                <span className="flex items-center gap-1 bg-neutral-100 text-neutral-700 text-xs px-2 py-1 rounded-full" style={{ marginLeft: depth * 12 }}>
+                  {depth > 0 && <span className="text-neutral-400">↳</span>}
+                  {c.name}
+                  <button onClick={() => delCategory(c.id)} className="text-neutral-400 hover:text-red-500 ml-1">×</button>
+                </span>
+                {c.children?.length ? renderTree(c.children, depth + 1) : null}
+              </span>
+            ));
+          })(catTree, 0)}
         </div>
       )}
 
@@ -192,10 +208,21 @@ export default function CatalogPage() {
       {mode === 'add-category' && (
         <Card className="mb-4 max-w-sm">
           <CardContent className="pt-4">
-            <form onSubmit={saveCategory} className="flex gap-2">
+            <form onSubmit={saveCategory} className="space-y-3">
               <Input placeholder="Category name" value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)} required autoFocus />
-              <Button type="submit">Add</Button>
+              <Select value={newCategoryParent} onValueChange={v => setNewCategoryParent(v === '__none__' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Parent category (optional)">
+                    {newCategoryParent ? (categories.find(c => c.id === newCategoryParent)?.name || 'Select parent…') : 'No parent (top-level)'}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No parent (top-level)</SelectItem>
+                  {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button type="submit" className="w-full">Add Category</Button>
             </form>
           </CardContent>
         </Card>
@@ -225,7 +252,7 @@ export default function CatalogPage() {
               </div>
               <div className="space-y-1">
                 <Label>Category</Label>
-                <Select value={form.categoryId} onValueChange={(v) => v && setForm({ ...form, categoryId: v })}>
+                <Select value={form.categoryId} onValueChange={(v) => v && setForm({ ...form, categoryId: v === '__none__' ? '' : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category…">
                       {form.categoryId
@@ -234,7 +261,15 @@ export default function CatalogPage() {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    <SelectItem value="__none__">— No category —</SelectItem>
+                    {(function flatWithDepth(nodes: Category[], depth: number): React.ReactNode {
+                      return nodes.map(c => [
+                        <SelectItem key={c.id} value={c.id}>
+                          {depth > 0 ? `${'  '.repeat(depth)}↳ ${c.name}` : c.name}
+                        </SelectItem>,
+                        c.children?.length ? flatWithDepth(c.children, depth + 1) : null,
+                      ]);
+                    })(catTree, 0)}
                   </SelectContent>
                 </Select>
               </div>

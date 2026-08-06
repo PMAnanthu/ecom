@@ -1,13 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useTemplate } from '@/lib/template-context';
-import { useShopData } from '@/lib/use-shop-data';
+import { useShopData, type Category } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
 import { usePathname } from 'next/navigation';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
 import { Input } from '@/components/ui/input';
 import { imgUrl } from '@/components/templates/TemplateShells';
+import { ChevronDown, ChevronRight, SlidersHorizontal } from 'lucide-react';
 
 function useStorePath() {
   const pathname = usePathname();
@@ -15,43 +17,142 @@ function useStorePath() {
   return match ? `/s/${match[1]}` : '';
 }
 
-function CategoryPills({ categories, category, setCategory, accent = 'black' }: Readonly<{
-  categories: { id: string; name: string }[];
-  category: string; setCategory: (v: string) => void;
-  accent?: string;
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price_asc', label: 'Price: Low → High' },
+  { value: 'price_desc', label: 'Price: High → Low' },
+  { value: 'name_asc', label: 'Name A–Z' },
+];
+
+function SortSelect({ sort, setSort, accent = 'default' }: Readonly<{ sort: string; setSort: (v: string) => void; accent?: string }>) {
+  return (
+    <select value={sort} onChange={e => setSort(e.target.value)}
+      className={`text-sm border rounded-full px-3 py-1.5 bg-white focus:outline-none ${accent === 'indigo' ? 'border-indigo-200 focus:border-indigo-400' : 'border-neutral-200 focus:border-black'}`}>
+      {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+    </select>
+  );
+}
+
+// ─── Tree node (recursive) ────────────────────────────────────────────────────
+function CategoryNode({ node, category, setCategory, accent = 'black', depth = 0 }: Readonly<{
+  node: Category; category: string; setCategory: (v: string) => void; accent?: string; depth?: number;
+}>) {
+  const [open, setOpen] = useState(false);
+  const hasChildren = (node.children?.length ?? 0) > 0;
+  const isActive = category === node.id;
+  const activeCls = accent === 'indigo' ? 'bg-indigo-600 text-white' : 'bg-black text-white';
+  const baseCls = `flex items-center gap-1 w-full text-left px-2 py-1.5 rounded text-sm transition-colors ${isActive ? activeCls : 'hover:bg-neutral-100 text-neutral-700'}`;
+
+  return (
+    <div style={{ paddingLeft: depth * 12 }}>
+      <div className="flex items-center gap-0.5">
+        {hasChildren
+          ? <button type="button" onClick={() => setOpen(o => !o)} className="shrink-0 text-neutral-400 hover:text-black p-0.5">
+              {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </button>
+          : <span className="w-4 shrink-0" />
+        }
+        <button type="button" onClick={() => setCategory(isActive ? '' : node.id)} className={baseCls}>
+          {node.name}
+        </button>
+      </div>
+      {hasChildren && open && (
+        <div className="mt-0.5">
+          {node.children!.map(child => (
+            <CategoryNode key={child.id} node={child} category={category} setCategory={setCategory} accent={accent} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CategoryTree({ tree, category, setCategory, accent = 'black' }: Readonly<{
+  tree: Category[]; category: string; setCategory: (v: string) => void; accent?: string;
+}>) {
+  const activeCls = accent === 'indigo' ? 'bg-indigo-600 text-white' : 'bg-black text-white';
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button type="button" onClick={() => setCategory('')}
+        className={`text-left px-2 py-1.5 rounded text-sm ${!category ? activeCls : 'hover:bg-neutral-100 text-neutral-700'}`}>
+        All
+      </button>
+      {tree.map(node => (
+        <CategoryNode key={node.id} node={node} category={category} setCategory={setCategory} accent={accent} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Category pills (flat with indent labels for subcategories) ───────────────
+function CategoryPills({ tree, category, setCategory, accent = 'black' }: Readonly<{
+  tree: Category[]; category: string; setCategory: (v: string) => void; accent?: string;
 }>) {
   const activeCls = accent === 'indigo' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-black text-white border-black';
+
+  const flatWithDepth: { id: string; label: string; depth: number }[] = [];
+  const flatten = (nodes: Category[], depth: number) => {
+    nodes.forEach(n => {
+      flatWithDepth.push({ id: n.id, label: n.name, depth });
+      if (n.children?.length) flatten(n.children, depth + 1);
+    });
+  };
+  flatten(tree, 0);
+
   return (
     <div className="flex flex-wrap gap-2">
-      <button onClick={() => setCategory('')}
+      <button type="button" onClick={() => setCategory('')}
         className={`px-3 py-1 rounded-full text-sm border transition-all ${!category ? activeCls : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-400'}`}>
         All
       </button>
-      {categories.map((c) => (
-        <button key={c.id} onClick={() => setCategory(c.id)}
-          className={`px-3 py-1 rounded-full text-sm border transition-all ${category === c.id ? activeCls : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-400'}`}>
-          {c.name}
+      {flatWithDepth.map(({ id, label, depth }) => (
+        <button key={id} type="button" onClick={() => setCategory(id)}
+          className={`px-3 py-1 rounded-full text-sm border transition-all ${category === id ? activeCls : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-400'}`}>
+          {depth > 0 ? `${'·'.repeat(depth)} ${label}` : label}
         </button>
       ))}
     </div>
   );
 }
 
-function SidebarCategories({ categories, category, setCategory }: Readonly<{
-  categories: { id: string; name: string }[];
-  category: string; setCategory: (v: string) => void;
+// ─── Mobile filter drawer ─────────────────────────────────────────────────────
+function MobileFilterDrawer({ open, onClose, tree, category, setCategory, sort, setSort }: Readonly<{
+  open: boolean; onClose: () => void;
+  tree: Category[]; category: string; setCategory: (v: string) => void;
+  sort: string; setSort: (v: string) => void;
 }>) {
+  if (!open) return null;
   return (
-    <div className="flex flex-col gap-1 text-sm">
-      <p className="text-xs font-semibold text-neutral-400 uppercase mb-1">Categories</p>
-      <button onClick={() => setCategory('')} className={`text-left py-1.5 px-2 rounded ${!category ? 'bg-black text-white' : 'hover:bg-neutral-100 text-neutral-700'}`}>All</button>
-      {categories.map((c) => (
-        <button key={c.id} onClick={() => setCategory(c.id)} className={`text-left py-1.5 px-2 rounded ${category === c.id ? 'bg-black text-white' : 'hover:bg-neutral-100 text-neutral-700'}`}>{c.name}</button>
-      ))}
+    <div className="fixed inset-0 z-50 flex justify-end md:hidden">
+      <button className="absolute inset-0 bg-black/50 cursor-default" aria-label="Close filters" onClick={onClose} />
+      <div className="relative w-72 bg-white flex flex-col h-full shadow-xl">
+        <div className="flex items-center justify-between px-4 py-3 border-b">
+          <span className="font-semibold">Filter & Sort</span>
+          <button onClick={onClose} className="text-2xl leading-none text-neutral-400 hover:text-black">×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4 space-y-5">
+          <div>
+            <p className="text-xs font-semibold text-neutral-400 uppercase mb-2">Sort by</p>
+            <div className="flex flex-col gap-1">
+              {SORT_OPTIONS.map(o => (
+                <button key={o.value} type="button" onClick={() => setSort(o.value)}
+                  className={`text-left px-3 py-2 rounded text-sm ${sort === o.value ? 'bg-black text-white' : 'hover:bg-neutral-100 text-neutral-700'}`}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-neutral-400 uppercase mb-2">Category</p>
+            <CategoryTree tree={tree} category={category} setCategory={id => { setCategory(id); onClose(); }} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
+// ─── Card product ─────────────────────────────────────────────────────────────
 function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['products'][0]; base: string }>) {
   const { addItem } = useCartStore();
   return (
@@ -68,29 +169,50 @@ function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['
         <div className="flex items-center justify-between mt-auto pt-2 border-t">
           <span className="font-bold text-lg">${p.price.toFixed(2)}</span>
           {p.stock > 0
-            ? <button onClick={() => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 })} className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>
-            : <span className="text-xs text-neutral-400">Out of stock</span>
-          }
+            ? <button type="button" onClick={() => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 })} className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>
+            : <span className="text-xs text-neutral-400">Out of stock</span>}
         </div>
       </div>
     </div>
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function ProductsPage() {
   const template = useTemplate();
   const base = useStorePath();
-  const { products, categories, search, setSearch, category, setCategory, loadMore, hasMore, loadingMore, total } = useShopData();
+  const { products, tree, search, setSearch, category, setCategory, sort, setSort, loadMore, hasMore, loadingMore, total } = useShopData();
+  const [filterOpen, setFilterOpen] = useState(false);
 
-  const count = <p className="text-sm text-neutral-500 mb-2">{total} products</p>;
+  const count = <p className="text-sm text-neutral-500">{total} products</p>;
+
+  const topbar = (accent?: string) => (
+    <div className="flex flex-wrap items-center gap-3 mb-4">
+      <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs h-9" />
+      <div className="hidden md:block">
+        <SortSelect sort={sort} setSort={setSort} accent={accent} />
+      </div>
+      <button type="button" onClick={() => setFilterOpen(true)}
+        className="md:hidden flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-sm text-neutral-600 hover:border-black">
+        <SlidersHorizontal size={14} /> Filter & Sort
+      </button>
+      <div className="ml-auto hidden md:block">{count}</div>
+    </div>
+  );
 
   if (template === 'sidebar') {
     return (
-      <TemplateWrapper sidebar={<SidebarCategories categories={categories} category={category} setCategory={setCategory} />}>
-        <div className="flex items-center justify-between mb-4">
-          <div><h1 className="text-xl font-bold">Products</h1>{count}</div>
-          <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+      <TemplateWrapper sidebar={
+        <div>
+          <p className="text-xs font-semibold text-neutral-400 uppercase mb-2">Categories</p>
+          <CategoryTree tree={tree} category={category} setCategory={setCategory} />
+          <p className="text-xs font-semibold text-neutral-400 uppercase mt-4 mb-2">Sort</p>
+          <SortSelect sort={sort} setSort={setSort} />
         </div>
+      }>
+        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
+        {topbar()}
+        <div className="md:hidden mb-2">{count}</div>
         {products.length === 0
           ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
           : <InfiniteProductGrid products={products} loadMore={loadMore} hasMore={hasMore} loadingMore={loadingMore} cols="grid-cols-2 lg:grid-cols-3" />
@@ -103,12 +225,15 @@ export default function ProductsPage() {
     return (
       <TemplateWrapper>
         <div className="max-w-6xl mx-auto px-6 py-10">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h1 className="text-2xl font-extrabold">All Products</h1>
-            <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs h-9" />
           </div>
-          <div className="mb-4"><CategoryPills categories={categories} category={category} setCategory={setCategory} accent="indigo" /></div>
-          {count}
+          {topbar('indigo')}
+          <div className="hidden md:block mb-4">
+            <CategoryPills tree={tree} category={category} setCategory={setCategory} accent="indigo" />
+          </div>
+          <div className="md:hidden mb-2">{count}</div>
+          <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
           {products.length === 0
             ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
             : <>
@@ -124,15 +249,19 @@ export default function ProductsPage() {
     );
   }
 
+  // topnav template
   return (
     <TemplateWrapper>
       <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h1 className="text-2xl font-bold">All Products</h1>
-          <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
         </div>
-        <div className="mb-4"><CategoryPills categories={categories} category={category} setCategory={setCategory} /></div>
-        {count}
+        {topbar()}
+        <div className="hidden md:block mb-4">
+          <CategoryPills tree={tree} category={category} setCategory={setCategory} />
+        </div>
+        <div className="md:hidden mb-2">{count}</div>
+        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
         {products.length === 0
           ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
           : <InfiniteProductGrid products={products} loadMore={loadMore} hasMore={hasMore} loadingMore={loadingMore} />
