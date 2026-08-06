@@ -6,6 +6,8 @@ steps:
       - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-ui:latest'
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=https://ecom-api-gateway-496160804659.us-east1.run.app/api'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_STOREFRONT_URL=https://ecom-storefront-m6jmogmpra-ue.a.run.app'
       - '.'
     dir: 'platform-ui'
   - name: 'gcr.io/cloud-builders/docker'
