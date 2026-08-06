@@ -20,11 +20,21 @@ const STATUS_ICON: Record<string, string> = {
 };
 
 export default function OrdersPage() {
-  const { user } = useStorefrontStore();
+  const { user, store } = useStorefrontStore();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const template = useTemplate();
   const isCard = template === 'card';
+  const b = (store?.branding || {}) as Record<string, string>;
+
+  const ordersTitle = b.ordersTitle || 'My Orders';
+  const statusMessages: Record<string, string> = {
+    PENDING: b.orderPendingMessage || 'We are preparing your order.',
+    PROCESSING: b.orderPendingMessage || 'Your order is being processed.',
+    SHIPPED: b.orderShippedMessage || 'Your order is on its way!',
+    DELIVERED: b.orderDeliveredMessage || 'Your order has been delivered. Enjoy!',
+    CANCELLED: 'Your order was cancelled.',
+  };
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }
@@ -36,7 +46,7 @@ export default function OrdersPage() {
   return (
     <TemplateWrapper>
       <div className="mx-auto px-6 py-10 max-w-2xl">
-        <h1 className={`text-2xl font-bold mb-6 ${isCard ? 'text-indigo-900' : ''}`}>My Orders</h1>
+        <h1 className={`text-2xl font-bold mb-6 ${isCard ? 'text-indigo-900' : ''}`}>{ordersTitle}</h1>
 
         {orders.length === 0 && (
           <div className={`${boxCls} text-center py-12 text-neutral-400`}>No orders yet.</div>
@@ -50,9 +60,12 @@ export default function OrdersPage() {
                   <p className="font-mono text-xs text-neutral-400">#{o.id.slice(0, 8).toUpperCase()}</p>
                   <p className="text-xs text-neutral-400 mt-0.5">{new Date(o.createdAt).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span>{STATUS_ICON[o.status] ?? '📦'}</span>
-                  <Badge variant={STATUS_COLOR[o.status] ?? 'secondary'}>{o.status}</Badge>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <span>{STATUS_ICON[o.status] ?? '📦'}</span>
+                    <Badge variant={STATUS_COLOR[o.status] ?? 'secondary'}>{o.status}</Badge>
+                  </div>
+                  <p className="text-xs text-neutral-400 text-right max-w-[180px]">{statusMessages[o.status]}</p>
                 </div>
               </div>
 
