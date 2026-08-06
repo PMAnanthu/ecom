@@ -11,7 +11,7 @@ api.interceptors.request.use((config) => {
 
     // Inject storeId for store/catalog/order calls
     try {
-      const raw = localStorage.getItem('auth-store');
+      const raw = localStorage.getItem('auth-store-v2');
       if (raw) {
         const storeId = JSON.parse(raw)?.state?.storeId;
         if (storeId) config.headers['x-store-id'] = storeId;
@@ -36,11 +36,11 @@ api.interceptors.response.use(
         localStorage.setItem('refreshToken', data.refreshToken);
         // Update zustand persist
         try {
-          const raw = localStorage.getItem('auth-store');
+          const raw = localStorage.getItem('auth-store-v2');
           if (raw) {
             const parsed = JSON.parse(raw);
             parsed.state.accessToken = data.accessToken;
-            localStorage.setItem('auth-store', JSON.stringify(parsed));
+            localStorage.setItem('auth-store-v2', JSON.stringify(parsed));
           }
         } catch { /* ignore */ }
         original.headers.Authorization = `Bearer ${data.accessToken}`;
