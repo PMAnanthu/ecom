@@ -34,7 +34,7 @@ export default function SettingsPage() {
       setTemplate(s.template || 'default');
       const b: Branding = typeof s.branding === 'object' ? s.branding : {};
       setBranding({ currency: 'USD', ...b });
-      if (b.logoUrl) setLogoPreview(`${STORE_SERVICE}${b.logoUrl}`);
+      if (b.logoUrl) setLogoPreview(b.logoUrl.startsWith('http') ? b.logoUrl : `${STORE_SERVICE}${b.logoUrl}`);
     }).catch(() => setError('Failed to load store settings.'))
       .finally(() => setLoading(false));
 

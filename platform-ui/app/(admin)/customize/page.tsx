@@ -53,9 +53,13 @@ export default function CustomizePage() {
         logoUrl: branding.logoUrl || '',
         thumbnailUrl: branding.thumbnailUrl || '',
       });
-      if (branding.heroBgImage) setBgPreview(`${STORE_SERVICE}${branding.heroBgImage}`);
-      if (branding.logoUrl) setLogoPreview(`${STORE_SERVICE}${branding.logoUrl}`);
-      if (branding.thumbnailUrl) setThumbPreview(`${STORE_SERVICE}${branding.thumbnailUrl}`);
+      const resolveUrl = (url: string) => {
+        if (!url) return '';
+        return url.startsWith('http') ? url : `${STORE_SERVICE}${url}`;
+      };
+      if (branding.heroBgImage) setBgPreview(resolveUrl(branding.heroBgImage));
+      if (branding.logoUrl) setLogoPreview(resolveUrl(branding.logoUrl));
+      if (branding.thumbnailUrl) setThumbPreview(resolveUrl(branding.thumbnailUrl));
     }).finally(() => setLoading(false));
   }, []);
 
