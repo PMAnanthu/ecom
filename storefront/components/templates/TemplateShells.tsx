@@ -6,8 +6,12 @@ import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { useRouter } from 'next/navigation';
 
+const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
+
 export function imgUrl(src: string) {
   if (!src) return '';
+  if (src.startsWith('http')) return src; // GCS or external URL — use directly
+  if (src.startsWith('/uploads/')) return `${CATALOG_URL}${src}`; // legacy local uploads
   return src;
 }
 
