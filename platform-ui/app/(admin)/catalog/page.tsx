@@ -153,7 +153,6 @@ export default function CatalogPage() {
 
   const del = async (id: string) => { await api.delete(`/catalog/products/${id}`); await load(); };
   const delCategory = async (id: string) => { await api.delete(`/catalog/categories/${id}`); await loadCategories(); };
-  };
 
   return (
     <div>
