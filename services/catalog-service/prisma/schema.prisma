@@ -31,6 +31,7 @@ model Product {
   stock       Int       @default(0)
   images      Json      @default("[]")
   tags        String[]  @default([])
+  specs       Json      @default("[]")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   @@schema("catalog_svc")

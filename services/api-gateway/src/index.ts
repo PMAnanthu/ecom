@@ -59,10 +59,13 @@ const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3
 const ORDER_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3005';
 const STOREFRONT_URL = process.env.STOREFRONT_SERVICE_URL || 'http://storefront-service:3006';
 
-const proxy = httpProxy.createProxyServer({ changeOrigin: true });
+const proxy = httpProxy.createProxyServer({ changeOrigin: true, xfwd: true });
 proxy.on('error', (err, _req, res) => {
   console.error('Proxy error:', err.message);
   (res as Response).status(502).json({ error: 'Bad gateway' });
+});
+proxy.on('proxyReq', (proxyReq) => {
+  proxyReq.setHeader('Connection', 'keep-alive');
 });
 
 // Rewrites /api/<prefix>/rest → /rest and proxies to target

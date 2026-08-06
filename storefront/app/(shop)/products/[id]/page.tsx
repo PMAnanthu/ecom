@@ -8,7 +8,8 @@ import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-interface Product { id: string; name: string; price: number; stock: number; images: string[]; description?: string; category?: { name: string } }
+interface Spec { key: string; value: string }
+interface Product { id: string; name: string; price: number; stock: number; images: string[]; description?: string; category?: { name: string }; specs?: Spec[] }
 
 export default function ProductDetailPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
   const { id } = use(params);
@@ -16,6 +17,7 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
   const { addItem } = useCartStore();
   const template = useTemplate();
   const { symbol } = useCurrency();
@@ -39,12 +41,36 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
     <div className="grid md:grid-cols-2 gap-8">
       {/* Image slideshow */}
       <div className="space-y-3">
-        <div className={`aspect-square rounded-2xl overflow-hidden ${isCard ? 'shadow-lg' : 'border'} bg-neutral-100 flex items-center justify-center text-6xl`}>
+        {/* Main image — click to zoom */}
+        <button type="button" onClick={() => images[activeImg] && setZoomOpen(true)}
+          className={`w-full aspect-square rounded-2xl overflow-hidden ${isCard ? 'shadow-lg' : 'border'} bg-neutral-100 flex items-center justify-center text-6xl cursor-zoom-in`}>
           {images[activeImg]
             ? <img src={images[activeImg]} alt={product.name} className="w-full h-full object-cover" />
             : '📦'
           }
-        </div>
+        </button>
+
+        {/* Zoom lightbox */}
+        {zoomOpen && images[activeImg] && (
+          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+            onClick={() => setZoomOpen(false)}>
+            <button className="absolute top-4 right-4 text-white text-3xl hover:text-neutral-300" aria-label="Close zoom">×</button>
+            {images.length > 1 && (
+              <button className="absolute left-4 text-white text-3xl hover:text-neutral-300"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((activeImg - 1 + images.length) % images.length); }}
+                aria-label="Previous">‹</button>
+            )}
+            <img src={images[activeImg]} alt={product.name}
+              className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()} />
+            {images.length > 1 && (
+              <button className="absolute right-4 text-white text-3xl hover:text-neutral-300"
+                onClick={(e) => { e.stopPropagation(); setActiveImg((activeImg + 1) % images.length); }}
+                aria-label="Next">›</button>
+            )}
+            <div className="absolute bottom-4 text-white text-sm opacity-60">{activeImg + 1} / {images.length}</div>
+          </div>
+        )}
         {images.length > 1 && (
           <div className="flex gap-2 overflow-x-auto pb-1">
             {images.map((img, i) => {
@@ -66,6 +92,20 @@ export default function ProductDetailPage({ params }: Readonly<{ params: Promise
         {product.category && <Badge variant="secondary">{product.category.name}</Badge>}
         <h1 className="text-2xl font-bold">{product.name}</h1>
         {product.description && <p className="text-neutral-600">{product.description}</p>}
+
+        {/* Product specs */}
+        {product.specs && product.specs.length > 0 && (
+          <div className={`rounded-xl overflow-hidden border ${isCard ? 'border-indigo-100' : 'border-neutral-200'}`}>
+            {product.specs.map((spec) => (
+              <div key={spec.key} className="flex border-b border-neutral-100 last:border-0">
+                <div className={`w-1/3 px-3 py-2 text-sm font-semibold shrink-0 ${isCard ? 'bg-indigo-50 text-indigo-800' : 'bg-neutral-50 text-neutral-700'}`}>
+                  {spec.key}
+                </div>
+                <div className="flex-1 px-3 py-2 text-sm text-neutral-600 whitespace-pre-wrap">{spec.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
         <p className={`text-3xl font-bold ${isCard ? 'text-indigo-700' : ''}`}>{symbol}{product.price.toFixed(2)}</p>
         <p className="text-sm text-neutral-500">{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</p>
         {product.stock > 0 && (

@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[]; categoryId?: string; category?: { id: string; name: string } }
+interface Product { id: string; name: string; price: number; stock: number; description?: string; images: string[]; categoryId?: string; category?: { id: string; name: string }; specs?: Spec[] }
 interface Category { id: string; name: string }
+interface Spec { key: string; value: string }
 interface ImageEntry { file: File; preview: string; id: string }
 
 const CATALOG_SERVICE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
@@ -70,6 +71,7 @@ export default function CatalogPage() {
   const [newCategory, setNewCategory] = useState('');
   const [images, setImages] = useState<ImageEntry[]>([]);
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [specs, setSpecs] = useState<Spec[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = () => api.get('/catalog/products').then((r) => setProducts(r.data.products)).catch(() => {});
@@ -77,11 +79,12 @@ export default function CatalogPage() {
 
   useEffect(() => { load(); loadCategories(); }, []);
 
-  const openAdd = () => { setForm(emptyForm); setImages([]); setExistingImages([]); setEditingId(null); setError(''); setMode('add'); };
+  const openAdd = () => { setForm(emptyForm); setImages([]); setExistingImages([]); setSpecs([]); setEditingId(null); setError(''); setMode('add'); };
   const openEdit = (p: Product) => {
     setForm({ name: p.name, price: String(p.price), stock: String(p.stock), description: p.description || '', categoryId: p.categoryId || '' });
     setImages([]);
     setExistingImages(p.images || []);
+    setSpecs(p.specs || []);
     setEditingId(p.id);
     setError('');
     setMode('edit');
@@ -134,6 +137,7 @@ export default function CatalogPage() {
         stock: Number.parseInt(form.stock, 10),
         description: form.description || undefined,
         categoryId: form.categoryId || undefined,
+        specs,
       };
       let productId = editingId;
       if (mode === 'add') {
@@ -149,6 +153,11 @@ export default function CatalogPage() {
     } catch { setError('Failed to save product. Please try again.');
     } finally { setSaving(false); }
   };
+
+  const updateSpec = (i: number, field: 'key' | 'value', val: string) =>
+    setSpecs(prev => prev.map((s, j) => j === i ? { ...s, [field]: val } : s));
+  const removeSpec = (i: number) => setSpecs(prev => prev.filter((_, j) => j !== i));
+  const addSpec = () => setSpecs(prev => [...prev, { key: '', value: '' }]);
 
   const del = async (id: string) => { await api.delete(`/catalog/products/${id}`); await load(); };
   const delCategory = async (id: string) => { await api.delete(`/catalog/categories/${id}`); await loadCategories(); };
@@ -233,6 +242,28 @@ export default function CatalogPage() {
                 <Label>Description</Label>
                 <Textarea value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
+              </div>
+
+              {/* Specs / Key-Value Details */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Product Details</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addSpec}>
+                    + Add Field
+                  </Button>
+                </div>
+                {specs.map((spec, i) => (
+                  <div key={`spec-${spec.key || i}`} className="flex gap-2 items-start">
+                    <Input placeholder="Field name (e.g. Material)" value={spec.key}
+                      onChange={(e) => updateSpec(i, 'key', e.target.value)}
+                      className="w-1/3 shrink-0" />
+                    <Textarea placeholder="Value (e.g. 100% Cotton)" value={spec.value} rows={1}
+                      onChange={(e) => updateSpec(i, 'value', e.target.value)}
+                      className="flex-1 min-h-0 resize-none" />
+                    <button type="button" onClick={() => removeSpec(i)}
+                      className="text-red-400 hover:text-red-600 text-lg leading-none mt-2">×</button>
+                  </div>
+                ))}
               </div>
               <div className="space-y-2">
                 <Label>Product Images</Label>

@@ -78,7 +78,12 @@ export function TemplateProvider({ children, storeSlug }: Readonly<TemplateProvi
       .finally(() => setReady(true));
   }, [storeSlug]);
 
-  if (!ready) return null;
+  // Show minimal skeleton while loading instead of blank screen
+  if (!ready) return (
+    <div className="min-h-screen bg-neutral-50 animate-pulse">
+      <div className="h-14 bg-white border-b" />
+    </div>
+  );
 
   if (notFound) {
     return (

@@ -14,6 +14,7 @@ const createSchema = z.object({
   categoryId: z.string().optional(),
   tags: z.array(z.string()).default([]),
   images: z.array(z.string()).default([]),
+  specs: z.array(z.object({ key: z.string(), value: z.string() })).default([]),
 });
 
 const updateSchema = z.object({
@@ -23,6 +24,8 @@ const updateSchema = z.object({
   stock: z.number().int().min(0).optional(),
   categoryId: z.string().nullable().optional(),
   tags: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(),
+  specs: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
 });
 
 productRouter.get('/', async (req: Request, res: Response) => {
