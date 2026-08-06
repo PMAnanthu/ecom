@@ -88,10 +88,9 @@ export default function CatalogPage() {
   };
   const closeForm = () => { setMode('idle'); setEditingId(null); setImages([]); setExistingImages([]); setError(''); };
 
-  const removeExistingImage = async (url: string) => {
-    const updated = existingImages.filter(i => i !== url);
-    setExistingImages(updated);
-    if (editingId) await api.patch(`/catalog/products/${editingId}`, { images: updated });
+  const removeExistingImage = (url: string) => {
+    setExistingImages(prev => prev.filter(i => i !== url));
+    // Images will be saved when the form is submitted via the images field
   };
 
   const addImageFiles = async (files: File[]) => {
@@ -141,7 +140,7 @@ export default function CatalogPage() {
         const { data } = await api.post('/catalog/products', payload);
         productId = data.product.id;
       } else if (editingId) {
-        await api.patch(`/catalog/products/${editingId}`, payload);
+        await api.patch(`/catalog/products/${editingId}`, { ...payload, images: existingImages });
       }
       if (images.length > 0 && productId) {
         await Promise.all(images.map((img) => uploadImage(productId!, img.file)));

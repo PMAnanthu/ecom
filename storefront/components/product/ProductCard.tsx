@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/lib/cart-store';
@@ -17,15 +18,22 @@ interface Product {
   category?: { id: string; name: string };
 }
 
+function useStorePath() {
+  const pathname = usePathname();
+  const match = /^\/s\/([^/]+)/.exec(pathname);
+  return match ? `/s/${match[1]}` : '';
+}
+
 export function ProductCard({ product }: Readonly<{ product: Product }>) {
   const { addItem } = useCartStore();
   const { symbol } = useCurrency();
   const [imgIdx, setImgIdx] = useState(0);
+  const base = useStorePath();
   const images = product.images || [];
 
   return (
     <div className="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow flex flex-col">
-      <Link href={`/products/${product.id}`}>
+      <Link href={`${base}/products/${product.id}`}>
         <div className="relative aspect-square bg-neutral-100 overflow-hidden">
           {images[imgIdx]
             ? <img src={images[imgIdx]} alt={product.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
@@ -33,11 +41,11 @@ export function ProductCard({ product }: Readonly<{ product: Product }>) {
           }
           {images.length > 1 && (
             <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-1">
-              {images.map((img, i) => (
-                <button key={img || i} type="button"
-                  onMouseEnter={() => setImgIdx(i)}
-                  onClick={(e) => { e.preventDefault(); setImgIdx(i); }}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors ${i === imgIdx ? 'bg-white' : 'bg-white/50'}`}
+              {images.map((img) => (
+                <button key={img} type="button"
+                  onMouseEnter={() => setImgIdx(images.indexOf(img))}
+                  onClick={(e) => { e.preventDefault(); setImgIdx(images.indexOf(img)); }}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${images.indexOf(img) === imgIdx ? 'bg-white' : 'bg-white/50'}`}
                 />
               ))}
             </div>
@@ -50,7 +58,7 @@ export function ProductCard({ product }: Readonly<{ product: Product }>) {
             {product.category.name}
           </span>
         )}
-        <Link href={`/products/${product.id}`}>
+        <Link href={`${base}/products/${product.id}`}>
           <p className="font-medium text-sm hover:underline line-clamp-1">{product.name}</p>
         </Link>
         <div className="flex items-center justify-between mt-auto pt-2">

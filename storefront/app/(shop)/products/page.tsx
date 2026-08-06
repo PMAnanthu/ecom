@@ -3,10 +3,17 @@
 import { useTemplate } from '@/lib/template-context';
 import { useShopData } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
+import { usePathname } from 'next/navigation';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
 import { Input } from '@/components/ui/input';
 import { imgUrl } from '@/components/templates/TemplateShells';
+
+function useStorePath() {
+  const pathname = usePathname();
+  const match = /^\/s\/([^/]+)/.exec(pathname);
+  return match ? `/s/${match[1]}` : '';
+}
 
 function CategoryPills({ categories, category, setCategory, accent = 'black' }: Readonly<{
   categories: { id: string; name: string }[];
@@ -45,18 +52,18 @@ function SidebarCategories({ categories, category, setCategory }: Readonly<{
   );
 }
 
-function CardProduct({ p }: Readonly<{ p: ReturnType<typeof useShopData>['products'][0] }>) {
+function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['products'][0]; base: string }>) {
   const { addItem } = useCartStore();
   return (
     <div className="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-      <a href={`/products/${p.id}`} className="block aspect-[4/3] bg-neutral-100 overflow-hidden">
+      <a href={`${base}/products/${p.id}`} className="block aspect-[4/3] bg-neutral-100 overflow-hidden">
         {p.images?.[0]
           ? <img src={imgUrl(p.images[0])} alt={p.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
           : <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>}
       </a>
       <div className="p-4 flex flex-col gap-1.5 flex-1">
         {p.category && <span className="text-xs text-indigo-600 font-medium">{p.category.name}</span>}
-        <a href={`/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></a>
+        <a href={`${base}/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></a>
         {p.description && <p className="text-sm text-neutral-500 line-clamp-2">{p.description}</p>}
         <div className="flex items-center justify-between mt-auto pt-2 border-t">
           <span className="font-bold text-lg">${p.price.toFixed(2)}</span>
@@ -72,6 +79,7 @@ function CardProduct({ p }: Readonly<{ p: ReturnType<typeof useShopData>['produc
 
 export default function ProductsPage() {
   const template = useTemplate();
+  const base = useStorePath();
   const { products, categories, search, setSearch, category, setCategory, loadMore, hasMore, loadingMore, total } = useShopData();
 
   const count = <p className="text-sm text-neutral-500 mb-2">{total} products</p>;
@@ -105,7 +113,7 @@ export default function ProductsPage() {
             ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
             : <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((p) => <CardProduct key={p.id} p={p} />)}
+                  {products.map((p) => <CardProduct key={p.id} p={p} base={base} />)}
                 </div>
                 {loadingMore && <div className="flex justify-center py-6"><div className="w-6 h-6 border-2 border-neutral-300 border-t-indigo-600 rounded-full animate-spin" /></div>}
                 {!hasMore && products.length > 0 && <p className="text-center text-xs text-neutral-400 py-4">All {products.length} products loaded</p>}
