@@ -86,7 +86,8 @@ export default function CheckoutPage() {
         shippingAddress = { name: data.address.name, line1: data.address.line1, city: data.address.city, country: data.address.country, zip: data.address.zip };
       }
 
-      await api.post('/orders/orders/checkout', { shippingAddress, storeId });
+      const cartPayload = items.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty }));
+      await api.post('/orders/orders/checkout', { shippingAddress, storeId, items: cartPayload });
       clear();
       router.push('/orders');
     } catch (err: unknown) {

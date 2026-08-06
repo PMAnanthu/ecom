@@ -49,6 +49,7 @@ function useNavBranding() {
     accentColor: (b.navAccentColor as string) || '',
     showCart: b.navShowCart !== false,
     showLogin: b.navShowLogin !== false,
+    menuSide: (b.navMobileMenuSide as string) === 'left' ? 'left' : 'right',
     navLinks: (b.navLinks as NavLink[] | undefined),
   };
 }
@@ -63,9 +64,10 @@ function MobileMenu({ open, onClose, links, cartCount, user, onLogout, nav }: Re
 }>) {
   const base = useStorePath();
   if (!open) return null;
+  const isLeft = nav.menuSide === 'left';
   const cartStyle = nav.accentColor ? { backgroundColor: nav.accentColor, color: '#fff' } : {};
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex" style={{ justifyContent: isLeft ? 'flex-start' : 'flex-end' }}>
       <button className="absolute inset-0 bg-black/60 cursor-default" aria-label="Close menu" onClick={onClose} />
       <div className="relative w-64 bg-white shadow-xl flex flex-col"
         style={nav.bgColor ? { backgroundColor: nav.bgColor } : {}}>

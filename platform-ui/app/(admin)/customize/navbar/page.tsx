@@ -28,6 +28,7 @@ export default function CustomizeNavbarPage() {
     navAccentColor: '#000000',
     navShowCart: true,
     navShowLogin: true,
+    navMobileMenuSide: 'right',
     navLinks: DEFAULT_LINKS,
   });
 
@@ -40,6 +41,7 @@ export default function CustomizeNavbarPage() {
         navAccentColor: b.navAccentColor || '#000000',
         navShowCart: b.navShowCart !== false,
         navShowLogin: b.navShowLogin !== false,
+        navMobileMenuSide: b.navMobileMenuSide || 'right',
         navLinks: b.navLinks || DEFAULT_LINKS,
       });
     }).catch(() => {});
@@ -117,6 +119,18 @@ export default function CustomizeNavbarPage() {
                 <span>{label}</span>
               </label>
             ))}
+            <div className="pt-2 border-t space-y-1">
+              <Label className="text-xs">Mobile menu slide-in side</Label>
+              <div className="flex gap-2">
+                {(['left', 'right'] as const).map(side => (
+                  <button key={side} type="button"
+                    onClick={() => setConfig({ ...config, navMobileMenuSide: side })}
+                    className={`px-5 py-1.5 rounded-full border text-sm font-medium capitalize transition-colors ${config.navMobileMenuSide === side ? 'bg-black text-white border-black' : 'border-neutral-300 text-neutral-600 hover:border-black'}`}>
+                    {side}
+                  </button>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

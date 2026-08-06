@@ -16,6 +16,12 @@ const checkoutSchema = z.object({
     zip: z.string(),
   }),
   storeId: z.string(),
+  items: z.array(z.object({
+    productId: z.string(),
+    name: z.string(),
+    price: z.number(),
+    qty: z.number().int().positive(),
+  })).optional(),
 });
 
 orderRouter.post('/checkout', async (req: Request, res: Response) => {
@@ -25,14 +31,18 @@ orderRouter.post('/checkout', async (req: Request, res: Response) => {
   const parsed = checkoutSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
 
-  const cartKey = `cart:${userId}`;
-  const cartData = await redis.get(cartKey);
-  if (!cartData) { res.status(400).json({ error: 'Cart is empty' }); return; }
+  // Prefer items sent directly from client; fall back to Redis cart
+  let cartItems = parsed.data.items;
+  if (!cartItems || cartItems.length === 0) {
+    const cartKey = `cart:${userId}`;
+    const cartData = await redis.get(cartKey);
+    if (!cartData) { res.status(400).json({ error: 'Cart is empty' }); return; }
+    const cart = JSON.parse(cartData);
+    if (!cart.items?.length) { res.status(400).json({ error: 'Cart is empty' }); return; }
+    cartItems = cart.items;
+  }
 
-  const cart = JSON.parse(cartData);
-  if (!cart.items?.length) { res.status(400).json({ error: 'Cart is empty' }); return; }
-
-  const total = cart.items.reduce((sum: number, i: { price: number; qty: number }) => sum + i.price * i.qty, 0);
+  const total = cartItems.reduce((sum: number, i: { price: number; qty: number }) => sum + i.price * i.qty, 0);
 
   const order = await prisma.order.create({
     data: {
@@ -41,7 +51,7 @@ orderRouter.post('/checkout', async (req: Request, res: Response) => {
       total,
       shippingAddress: parsed.data.shippingAddress,
       items: {
-        create: cart.items.map((i: { productId: string; name: string; price: number; qty: number }) => ({
+        create: cartItems.map((i: { productId: string; name: string; price: number; qty: number }) => ({
           productId: i.productId,
           productName: i.name,
           qty: i.qty,
@@ -52,7 +62,8 @@ orderRouter.post('/checkout', async (req: Request, res: Response) => {
     include: { items: true },
   });
 
-  await redis.del(cartKey);
+  // Clear Redis cart if it exists
+  await redis.del(`cart:${userId}`);
   res.status(201).json({ order });
 });
 
