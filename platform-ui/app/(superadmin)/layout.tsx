@@ -8,14 +8,18 @@ import { Sidebar } from '@/components/layout/Sidebar';
 export default function SuperAdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user } = useAuthStore();
   const router = useRouter();
+  const [hydrated, setHydrated] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  useEffect(() => { setHydrated(true); }, []);
+
   useEffect(() => {
+    if (!hydrated) return;
     if (!user) { router.replace('/login'); return; }
     if (user.role !== 'SUPERADMIN') router.replace('/dashboard');
-  }, [user, router]);
+  }, [hydrated, user, router]);
 
-  if (!user || user.role !== 'SUPERADMIN') return null;
+  if (!hydrated || !user || user?.role !== 'SUPERADMIN') return null;
 
   return (
     <div className="flex min-h-screen bg-neutral-50">
