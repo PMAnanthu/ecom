@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, Users, CreditCard, LayoutTemplate,
   LogOut, ShoppingBag, ExternalLink, ChevronDown, ChevronRight,
-  Home, Info, FileText, Navigation,
+  Home, Info, Navigation,
 } from 'lucide-react';
 
 const superAdminLinks = [
@@ -23,7 +23,6 @@ const superAdminLinks = [
 const customizeSubLinks = [
   { href: '/customize', label: 'Home', icon: Home },
   { href: '/customize/about', label: 'About', icon: Info },
-  { href: '/customize/orders', label: 'Orders', icon: FileText },
   { href: '/customize/navbar', label: 'Navbar', icon: Navigation },
 ];
 
