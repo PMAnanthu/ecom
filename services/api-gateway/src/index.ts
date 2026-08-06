@@ -3,7 +3,6 @@ import cors from 'cors';
 import httpProxy from 'http-proxy';
 import multer from 'multer';
 import { authenticate, requireRole } from './middleware/auth';
-import { Storage } from '@google-cloud/storage';
 
 const GCS_BUCKET = process.env.GCS_BUCKET || 'ecom-uploads-e-com-504518';
 const USE_GCS = process.env.NODE_ENV === 'production' || !!process.env.GCS_BUCKET;
@@ -13,10 +12,26 @@ async function handleUpload(req: Request, res: Response) {
   if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
   try {
     if (USE_GCS) {
-      const storage = new Storage();
-      const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const file = storage.bucket(GCS_BUCKET).file(filename);
-      await file.save(req.file.buffer, { contentType: req.file.mimetype, public: true });
+      // Use GCS XML API with service account token from metadata server
+      const tokenRes = await fetch(
+        'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+        { headers: { 'Metadata-Flavor': 'Google' } }
+      );
+      const { access_token } = await tokenRes.json() as { access_token: string };
+      const filename = `${Date.now()}-${req.file.originalname.replace(/[^a-z0-9.]/gi, '_')}`;
+      const uploadRes = await fetch(
+        `https://storage.googleapis.com/upload/storage/v1/b/${GCS_BUCKET}/o?uploadType=media&name=${filename}&predefinedAcl=publicRead`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': req.file.mimetype },
+          body: req.file.buffer,
+        }
+      );
+      if (!uploadRes.ok) {
+        const err = await uploadRes.text();
+        console.error('GCS error:', err);
+        throw new Error('GCS upload failed');
+      }
       res.json({ url: `https://storage.googleapis.com/${GCS_BUCKET}/${filename}` });
     } else {
       const fs = await import('node:fs');
