@@ -122,9 +122,56 @@ app.all('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), forward(
 app.all('/api/store', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 app.all('/api/store/*', ...mw(authenticate, requireRole('ADMIN')), forward(STORE_URL, 'store'));
 
-// Catalog product image upload — handled directly in gateway
+// Catalog product image upload — upload to GCS then update product in catalog-service
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.post('/api/catalog/products/:id/images', ...mw(authenticate, requireRole('ADMIN')), memUpload.single('image') as any, (req: Request, res: Response) => handleUpload(req, res));
+app.post('/api/catalog/products/:id/images', ...mw(authenticate, requireRole('ADMIN')), memUpload.single('image') as any, async (req: Request, res: Response) => {
+  if (!req.file) { res.status(400).json({ error: 'No file uploaded' }); return; }
+  try {
+    // 1. Upload to GCS
+    let imageUrl: string;
+    if (USE_GCS) {
+      const tokenRes = await fetch(
+        'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+        { headers: { 'Metadata-Flavor': 'Google' } }
+      );
+      const { access_token } = await tokenRes.json() as { access_token: string };
+      const filename = `${Date.now()}-${req.file.originalname.replace(/[^a-z0-9.]/gi, '_')}`;
+      const uploadRes = await fetch(
+        `https://storage.googleapis.com/upload/storage/v1/b/${GCS_BUCKET}/o?uploadType=media&name=${filename}`,
+        { method: 'POST', headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': req.file.mimetype }, body: req.file.buffer }
+      );
+      if (!uploadRes.ok) throw new Error(`GCS upload failed: ${uploadRes.status}`);
+      imageUrl = `https://storage.googleapis.com/${GCS_BUCKET}/${filename}`;
+    } else {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const crypto = await import('node:crypto');
+      const dir = path.join(process.cwd(), 'uploads');
+      fs.mkdirSync(dir, { recursive: true });
+      const filename = crypto.randomBytes(16).toString('hex');
+      fs.writeFileSync(path.join(dir, filename), req.file.buffer);
+      imageUrl = `/uploads/${filename}`;
+    }
+
+    // 2. Update product images in catalog-service
+    const catalogUrl = `${CATALOG_URL}/products/${req.params.id}/images-url`;
+    const updateRes = await fetch(catalogUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': req.headers['x-user-id'] as string,
+        'x-user-role': req.headers['x-user-role'] as string,
+        'x-store-id': req.headers['x-store-id'] as string || '',
+      },
+      body: JSON.stringify({ url: imageUrl }),
+    });
+    const updated = await updateRes.json();
+    res.json(updated);
+  } catch (err) {
+    console.error('Product image upload error:', err);
+    res.status(500).json({ error: 'Upload failed' });
+  }
+});
 
 // Catalog writes: admin only
 app.all('/api/catalog/products/*/images', ...mw(authenticate, requireRole('ADMIN')), forward(CATALOG_URL, 'catalog'));

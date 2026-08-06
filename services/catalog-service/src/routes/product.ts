@@ -100,3 +100,15 @@ productRouter.post('/:id/images', upload.single('image'), async (req: Request, r
   const updated = await prisma.product.update({ where: { id: req.params.id }, data: { images } });
   res.json({ product: updated });
 });
+
+// Accept a pre-uploaded URL (from gateway GCS upload) and add to product images
+productRouter.post('/:id/images-url', async (req: Request, res: Response) => {
+  const { url } = req.body;
+  if (!url) { res.status(400).json({ error: 'url required' }); return; }
+  const product = await prisma.product.findUnique({ where: { id: req.params.id } });
+  if (!product) { res.status(404).json({ error: 'Product not found' }); return; }
+
+  const images = [...(product.images as string[]), url];
+  const updated = await prisma.product.update({ where: { id: req.params.id }, data: { images } });
+  res.json({ product: updated });
+});
