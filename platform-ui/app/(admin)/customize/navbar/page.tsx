@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Trash2, Plus, GripVertical } from 'lucide-react';
 
 interface NavLink { label: string; href: string; enabled: boolean }
 
@@ -19,6 +20,8 @@ const DEFAULT_LINKS: NavLink[] = [
 export default function CustomizeNavbarPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [newHref, setNewHref] = useState('/');
   const [config, setConfig] = useState({
     navBgColor: '#ffffff',
     navTextColor: '#171717',
@@ -44,6 +47,18 @@ export default function CustomizeNavbarPage() {
 
   const updateLink = (i: number, field: keyof NavLink, val: string | boolean) =>
     setConfig(prev => ({ ...prev, navLinks: prev.navLinks.map((l, j) => j === i ? { ...l, [field]: val } : l) }));
+
+  const removeLink = (i: number) =>
+    setConfig(prev => ({ ...prev, navLinks: prev.navLinks.filter((_, j) => j !== i) }));
+
+  const addLink = () => {
+    const label = newLabel.trim();
+    const href = newHref.trim() || '/';
+    if (!label) return;
+    setConfig(prev => ({ ...prev, navLinks: [...prev.navLinks, { label, href, enabled: true }] }));
+    setNewLabel('');
+    setNewHref('/');
+  };
 
   const save = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,24 +122,54 @@ export default function CustomizeNavbarPage() {
 
         <Card>
           <CardHeader><CardTitle className="text-base">Navigation Links</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
+            {/* Header row */}
+            <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-2 items-center text-xs text-neutral-400 font-medium pb-1 border-b">
+              <span className="w-5" />
+              <span>Label</span>
+              <span>Path</span>
+              <span>On</span>
+              <span />
+            </div>
+
             {config.navLinks.map((link, i) => (
-              <div key={`${link.href}-${i}`} className="flex items-center gap-2">
-                <input type="checkbox" checked={link.enabled}
-                  onChange={e => updateLink(i, 'enabled', e.target.checked)}
-                  className="accent-black shrink-0" aria-label={`Enable ${link.label}`} />
+              <div key={`${link.href}-${i}`} className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-2 items-center">
+                <GripVertical size={14} className="text-neutral-300 shrink-0" />
                 <Input value={link.label} placeholder="Label"
                   onChange={e => updateLink(i, 'label', e.target.value)}
-                  className="w-28 h-8 text-sm" />
+                  className="h-8 text-sm" />
                 <Input value={link.href} placeholder="/path"
                   onChange={e => updateLink(i, 'href', e.target.value)}
-                  className="flex-1 h-8 text-sm font-mono" />
+                  className="h-8 text-sm font-mono" />
+                <input type="checkbox" checked={link.enabled}
+                  onChange={e => updateLink(i, 'enabled', e.target.checked)}
+                  className="accent-black" aria-label={`Enable ${link.label}`} />
+                <button type="button" onClick={() => removeLink(i)}
+                  className="text-neutral-300 hover:text-red-500 transition-colors" aria-label="Remove">
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))}
-            <Button type="button" variant="outline" size="sm"
-              onClick={() => setConfig(prev => ({ ...prev, navLinks: [...prev.navLinks, { label: '', href: '/', enabled: true }] }))}>
-              + Add Link
-            </Button>
+
+            {/* Add new link row */}
+            <div className="grid grid-cols-[auto_1fr_1fr_auto_auto] gap-2 items-center pt-2 border-t mt-2">
+              <Plus size={14} className="text-neutral-400 shrink-0" />
+              <Input value={newLabel} placeholder="Menu label"
+                onChange={e => setNewLabel(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                className="h-8 text-sm" />
+              <Input value={newHref} placeholder="/path or https://…"
+                onChange={e => setNewHref(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addLink())}
+                className="h-8 text-sm font-mono" />
+              <span />
+              <button type="button" onClick={addLink}
+                disabled={!newLabel.trim()}
+                className="text-neutral-400 hover:text-black disabled:opacity-30 transition-colors" aria-label="Add">
+                <Plus size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-neutral-400">Press Enter or click + to add. Use /path for store pages or full https:// URL for external links.</p>
           </CardContent>
         </Card>
 
