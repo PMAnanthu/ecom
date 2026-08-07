@@ -55,12 +55,22 @@ function useNavLinks(customLinks?: NavLink[]) {
 
 function useNavBranding() {
   const { store } = useStorefrontStore();
+  const mode = useThemeStore(s => s.mode);
   const b = (store?.branding || {}) as Record<string, unknown>;
-  // Nav-specific colors take priority; fall back to theme-level colors
-  const themeBg = (b.themeBg as string) || '';
-  const themeText = (b.themeText as string) || '';
-  const themeAccent = (b.themeAccent as string) || '';
+
+  // Pick light or dark theme colors based on current mode
+  const themeBg = mode === 'dark'
+    ? ((b.darkBg as string) || '#0a0a0a')
+    : ((b.lightBg as string) || (b.themeBg as string) || '#ffffff');
+  const themeText = mode === 'dark'
+    ? ((b.darkText as string) || '#fafafa')
+    : ((b.lightText as string) || (b.themeText as string) || '#171717');
+  const themeAccent = mode === 'dark'
+    ? ((b.darkAccent as string) || '#6366f1')
+    : ((b.lightAccent as string) || (b.themeAccent as string) || '#4f46e5');
+
   return {
+    // Nav-specific colors take priority over theme colors
     bgColor: (b.navBgColor as string) || themeBg,
     textColor: (b.navTextColor as string) || themeText,
     accentColor: (b.navAccentColor as string) || themeAccent,
@@ -68,7 +78,6 @@ function useNavBranding() {
     showLogin: b.navShowLogin !== false,
     menuSide: (b.navMobileMenuSide as string) === 'left' ? 'left' : 'right',
     navLinks: (b.navLinks as NavLink[] | undefined),
-    // Page-level theme
     pageBg: themeBg,
     pageText: themeText,
   };
@@ -143,10 +152,10 @@ export function SidebarShell({ children, sidebarContent }: Readonly<SidebarShell
     : { backgroundColor: '#000', color: '#fff' };
 
   return (
-    <div className="flex min-h-screen bg-neutral-50"
-      style={nav.pageBg ? { backgroundColor: nav.pageBg, color: nav.pageText || undefined } : {}}>
-      <aside className="hidden lg:flex w-60 min-h-screen border-r flex-col shrink-0 bg-white"
-        style={headerStyle}>
+    <div className="flex min-h-screen transition-colors duration-200"
+      style={{ backgroundColor: nav.pageBg || '#f9fafb', color: nav.pageText || '#171717' }}>
+      <aside className="hidden lg:flex w-60 min-h-screen border-r flex-col shrink-0 transition-colors duration-200"
+        style={{ backgroundColor: nav.bgColor || nav.pageBg || '#fff' }}>
         <div className="p-5 border-b">
           <Link href={`${base}/`} className="text-lg font-bold block" style={textStyle}>
             {store?.name || 'Shop'}
@@ -218,8 +227,8 @@ export function TopnavShell({ children }: Readonly<{ children: ReactNode }>) {
     : { backgroundColor: '#000', color: '#fff' };
 
   return (
-    <div className="min-h-screen bg-white"
-      style={nav.pageBg ? { backgroundColor: nav.pageBg, color: nav.pageText || undefined } : {}}>
+    <div className="min-h-screen transition-colors duration-200"
+      style={{ backgroundColor: nav.pageBg || '#fff', color: nav.pageText || '#171717' }}>
       <header className="sticky top-0 z-50 border-b shadow-sm" style={headerStyle}>
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
           <Link href={`${base}/`} className="font-bold text-lg shrink-0 truncate max-w-[150px] sm:max-w-none" style={textStyle}>
