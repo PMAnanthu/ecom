@@ -97,15 +97,13 @@ export default function SubscriptionPage() {
         {plans.map(plan => {
           const isCurrent = status?.subscription?.name === plan.name && !status?.expired;
           return (
-            <Card key={plan.id} className={`relative cursor-pointer transition-all hover:shadow-lg ${isCurrent ? 'border-2 border-green-400 bg-green-50/30' : 'hover:border-black hover:border-2'}`}
-              onClick={() => !isCurrent && openConfirm(plan)}>
-              {isCurrent && (
-                <div className="absolute -top-3 left-5">
-                  <Badge className="bg-green-500 text-white text-xs px-3 py-1">Current Plan</Badge>
+            <Card key={plan.id} className={`cursor-pointer transition-all hover:shadow-lg ${isCurrent ? 'border-2 border-green-500 bg-green-50/30' : 'hover:border-2 hover:border-black'}`}
+              onClick={() => openConfirm(plan)}>
+              <CardHeader className="pb-2 pt-6">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                  {isCurrent && <Badge className="bg-green-500 text-white text-xs shrink-0">Current Plan</Badge>}
                 </div>
-              )}
-              <CardHeader className="pb-2 pt-7">
-                <CardTitle className="text-xl">{plan.name}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="mb-3 flex items-baseline gap-2 flex-wrap min-h-[2.5rem]">
