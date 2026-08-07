@@ -41,7 +41,7 @@ function SubscriptionExpiredPopup({ status, onClose }: Readonly<{ status: SubSta
           </div>
         )}
         <div className="mt-6">
-          <button onClick={() => { setShowExpired(false); router.push('/subscription'); }}
+          <button onClick={() => { onClose(); router.push('/subscription'); }}
             className="w-full py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors">
             View Plans & Subscribe
           </button>
