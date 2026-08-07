@@ -43,11 +43,21 @@ adminMgmtRouter.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ user, store });
 });
 
+// Stats for super-admin dashboard
+adminMgmtRouter.get('/stats', async (_req: Request, res: Response) => {
+  const [total, activeUsers, inactiveUsers] = await Promise.all([
+    prisma.user.count({ where: { role: 'USER' } }),
+    prisma.user.count({ where: { role: 'USER', createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } }),
+    prisma.user.count({ where: { role: 'USER', createdAt: { lt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } }),
+  ]);
+  res.json({ customers: { total, active: activeUsers, inactive: inactiveUsers } });
+});
+
 // List all admin users
 adminMgmtRouter.get('/', async (_req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     where: { role: 'ADMIN' },
-    select: { id: true, email: true, role: true, createdAt: true },
+    select: { id: true, email: true, role: true, storeId: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
   });
   res.json({ users });

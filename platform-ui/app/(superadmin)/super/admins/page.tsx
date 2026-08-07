@@ -7,14 +7,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trash2, KeyRound, Ban, CheckCircle } from 'lucide-react';
 
-interface AdminUser { id: string; email: string; role: string; createdAt: string }
-
+interface AdminUser { id: string; email: string; role: string; storeId?: string; createdAt: string }
+interface Sub { id: string; name: string }
 type Modal = { type: 'password'; id: string; email: string } | { type: 'own-password' } | null;
 
 export default function AdminsPage() {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set());
+  const [subs, setSubs] = useState<Sub[]>([]);
+  const [suspendedIds, setSuspendedIds] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({ email: '', password: '', storeName: '', subdomain: '' });
   const [modal, setModal] = useState<Modal>(null);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
@@ -24,8 +27,12 @@ export default function AdminsPage() {
 
   const load = async () => {
     try {
-      const { data } = await api.get('/auth/admin-mgmt');
-      setAdmins(data.users || []);
+      const [adminsRes, subsRes] = await Promise.all([
+        api.get('/auth/admin-mgmt'),
+        api.get('/platform/subscriptions'),
+      ]);
+      setAdmins(adminsRes.data.users || []);
+      setSubs(subsRes.data.subscriptions || []);
     } catch { setError('Failed to load admins'); }
   };
 
@@ -38,8 +45,7 @@ export default function AdminsPage() {
     setLoading(true); setError('');
     try {
       await api.post('/auth/admin-mgmt', {
-        email: form.email,
-        password: form.password,
+        email: form.email, password: form.password,
         storeName: form.storeName || undefined,
         subdomain: form.subdomain || undefined,
       });
@@ -51,22 +57,28 @@ export default function AdminsPage() {
     } finally { setLoading(false); }
   };
 
-  const toggleBlock = async (admin: AdminUser) => {
-    const isBlocked = blockedIds.has(admin.id);
-    if (isBlocked) {
-      setBlockedIds(prev => { const s = new Set(prev); s.delete(admin.id); return s; });
-      flash(`${admin.email} unblocked`);
-    } else {
-      setBlockedIds(prev => new Set([...prev, admin.id]));
-      flash(`${admin.email} blocked`);
-    }
+  const toggleSuspend = async (admin: AdminUser) => {
+    const isSuspended = suspendedIds.has(admin.id);
+    try {
+      await api.patch(`/platform/admins/${admin.id}/status`, {
+        status: isSuspended ? 'ACTIVE' : 'SUSPENDED',
+      });
+      setSuspendedIds(prev => {
+        const s = new Set(prev);
+        if (isSuspended) s.delete(admin.id); else s.add(admin.id);
+        return s;
+      });
+      flash(isSuspended ? `${admin.email} activated` : `${admin.email} suspended`);
+    } catch { setError('Failed to update status'); }
   };
 
   const deleteAdmin = async (admin: AdminUser) => {
     if (!confirm(`Delete ${admin.email}? This cannot be undone.`)) return;
-    await api.delete(`/auth/admin-mgmt/${admin.id}`);
-    await load();
-    flash('Admin deleted');
+    try {
+      await api.delete(`/auth/admin-mgmt/${admin.id}`);
+      await load();
+      flash('Admin deleted');
+    } catch { setError('Failed to delete admin'); }
   };
 
   const changePassword = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -91,7 +103,7 @@ export default function AdminsPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Admins</h1>
         <Button variant="outline" size="sm" onClick={() => { setModal({ type: 'own-password' }); setPwForm({ current: '', newPw: '', confirm: '' }); setError(''); }}>
-          Change My Password
+          <KeyRound size={14} className="mr-1" /> Change My Password
         </Button>
       </div>
 
@@ -138,23 +150,47 @@ export default function AdminsPage() {
       <div className="space-y-2">
         {admins.length === 0 && <p className="text-sm text-neutral-400">No admin accounts yet.</p>}
         {admins.map((a) => {
-          const blocked = blockedIds.has(a.id);
+          const suspended = suspendedIds.has(a.id);
           return (
-            <div key={a.id} className={`flex items-center justify-between p-4 bg-white rounded-xl border ${blocked ? 'opacity-60' : ''}`}>
-              <div>
-                <p className="font-medium text-sm">{a.email}</p>
-                <p className="text-xs text-neutral-400">{new Date(a.createdAt).toLocaleDateString()}</p>
+            <div key={a.id} className={`flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-xl border transition-opacity ${suspended ? 'opacity-60' : ''}`}>
+              <div className="min-w-0">
+                <p className="font-medium text-sm truncate">{a.email}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-neutral-400">{new Date(a.createdAt).toLocaleDateString()}</p>
+                  {a.storeId && <span className="text-xs text-indigo-500 font-mono">has store</span>}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={blocked ? 'secondary' : 'default'}>{blocked ? 'BLOCKED' : 'ACTIVE'}</Badge>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant={suspended ? 'secondary' : 'default'}>{suspended ? 'SUSPENDED' : 'ACTIVE'}</Badge>
+
+                {/* Assign subscription */}
+                {subs.length > 0 && (
+                  <Select onValueChange={async (subId) => {
+                    try {
+                      await api.patch(`/platform/admins/${a.id}/subscription`, { subscriptionId: subId === '__none__' ? null : subId });
+                      flash('Subscription updated');
+                    } catch { setError('Failed to update subscription'); }
+                  }}>
+                    <SelectTrigger className="h-8 text-xs w-32">
+                      <SelectValue placeholder="Assign plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">No plan</SelectItem>
+                      {subs.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+
                 <Button size="sm" variant="outline"
                   onClick={() => { setModal({ type: 'password', id: a.id, email: a.email }); setPwForm({ current: '', newPw: '', confirm: '' }); setError(''); }}>
-                  Change PW
+                  <KeyRound size={12} className="mr-1" /> PW
                 </Button>
-                <Button size="sm" variant={blocked ? 'default' : 'outline'} onClick={() => toggleBlock(a)}>
-                  {blocked ? 'Unblock' : 'Block'}
+                <Button size="sm" variant={suspended ? 'default' : 'outline'} onClick={() => toggleSuspend(a)}>
+                  {suspended ? <><CheckCircle size={12} className="mr-1" />Activate</> : <><Ban size={12} className="mr-1" />Suspend</>}
                 </Button>
-                <Button size="sm" variant="destructive" onClick={() => deleteAdmin(a)}>Delete</Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteAdmin(a)}>
+                  <Trash2 size={12} />
+                </Button>
               </div>
             </div>
           );
