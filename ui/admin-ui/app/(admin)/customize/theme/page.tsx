@@ -247,7 +247,7 @@ export default function CustomizeThemePage() {
         </Card>
 
         {success && <p className="text-sm text-green-600">✓ Theme saved!</p>}
-        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save Theme'}</Button>
+        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save'}</Button>
       </form>
     </div>
   );

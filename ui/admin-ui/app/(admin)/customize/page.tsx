@@ -253,7 +253,7 @@ export default function CustomizePage() {
 
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
         <Button type="submit" disabled={saving} className="w-full">
-          {saving ? 'Saving…' : 'Save Customization'}
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </form>
     </div>

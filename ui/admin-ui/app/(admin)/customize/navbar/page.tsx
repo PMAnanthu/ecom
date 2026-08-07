@@ -188,7 +188,7 @@ export default function CustomizeNavbarPage() {
         </Card>
 
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
-        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save Navbar'}</Button>
+        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save'}</Button>
       </form>
     </div>
   );

@@ -103,7 +103,7 @@ export default function CustomizeAboutPage() {
 
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
         <Button type="submit" disabled={saving} className="w-full">
-          {saving ? 'Saving…' : 'Save About Page'}
+          {saving ? 'Saving…' : 'Save'}
         </Button>
       </form>
     </div>

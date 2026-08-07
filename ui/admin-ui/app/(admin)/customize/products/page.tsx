@@ -79,7 +79,7 @@ export default function CustomizeProductsPage() {
           </CardContent>
         </Card>
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
-        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save Products Page'}</Button>
+        <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save'}</Button>
       </form>
     </div>
   );
