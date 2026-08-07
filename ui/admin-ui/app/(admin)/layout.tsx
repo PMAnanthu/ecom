@@ -15,10 +15,7 @@ interface SubStatus {
 }
 
 function SubscriptionExpiredPopup({ status, onClose }: Readonly<{ status: SubStatus; onClose: () => void }>) {
-  const { clearAuth } = useAuthStore();
   const router = useRouter();
-
-  const logout = () => { clearAuth(); router.push('/login'); };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
@@ -43,18 +40,10 @@ function SubscriptionExpiredPopup({ status, onClose }: Readonly<{ status: SubSta
             </p>
           </div>
         )}
-        <div className="space-y-2">
-          <button onClick={() => router.push('/subscription')}
+        <div className="mt-6">
+          <button onClick={() => { setShowExpired(false); router.push('/subscription'); }}
             className="w-full py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors">
             View Plans & Subscribe
-          </button>
-          <button onClick={onClose}
-            className="w-full py-2.5 text-neutral-400 text-sm hover:text-black transition-colors">
-            Continue Without Subscription
-          </button>
-          <button onClick={logout}
-            className="w-full py-2 text-neutral-400 text-xs hover:text-black transition-colors">
-            Log Out
           </button>
         </div>
       </div>
@@ -99,7 +88,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
     }
   }, [pathname, hydrated, user, checkSubscription]);
 
-  if (!hydrated || !user || user.role !== 'ADMIN') return null;
+  if (!hydrated || user?.role !== 'ADMIN') return null;
 
   return (
     <div className="flex min-h-screen bg-neutral-50">
