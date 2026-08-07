@@ -14,62 +14,13 @@ const STOREFRONT_BASE = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://ecom-
 interface StoreRow {
   id: string; name: string; subdomain: string; storeUrlId?: string;
   domain?: string; email?: string; phone?: string; adminId: string;
-  published: boolean; live: boolean; availableDays: number; createdAt: string;
+  published: boolean; availableDays: number; createdAt: string;
 }
 interface Admin { id: string; email: string }
 interface PlatformAdmin { id: string; email: string; availableDays: number }
 type Modal = { type: 'create' } | { type: 'edit'; store: StoreRow } | null;
 
-const emptyForm = { name: '', subdomain: '', storeUrlId: '', email: '', phone: '', adminId: '' };
-
-function StoreRow({ s, adminEmail, togglingLive, onToggleLive, onEdit }: {
-  readonly s: StoreRow;
-  readonly adminEmail: string;
-  readonly togglingLive: string | null;
-  readonly onToggleLive: (s: StoreRow) => void;
-  readonly onEdit: (s: StoreRow) => void;
-}) {
-  const liveLabel = s.live ? 'Go Offline' : 'Go Live';
-  const liveButtonLabel = togglingLive === s.id ? '…' : liveLabel;
-  return (
-    <tr className="hover:bg-neutral-50/50">
-      <td className="px-4 py-3 font-medium">{s.name}</td>
-      <td className="px-4 py-3 text-xs font-mono text-neutral-500">{s.storeUrlId || '—'}</td>
-      <td className="px-4 py-3">
-        <a href={`${STOREFRONT_BASE}/s/${s.subdomain}`} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-1 text-indigo-600 hover:underline text-xs font-mono">
-          {s.subdomain}.ecom.app <ExternalLink size={11} />
-        </a>
-        {s.domain && <p className="text-xs text-neutral-400 mt-0.5">{s.domain}</p>}
-      </td>
-      <td className="px-4 py-3">
-        <p className="text-xs">{s.email || '—'}</p>
-        <p className="text-xs text-neutral-400">{s.phone || ''}</p>
-      </td>
-      <td className="px-4 py-3 text-xs text-neutral-500">{adminEmail}</td>
-      <td className="px-4 py-3 text-xs text-neutral-500">{s.availableDays} days</td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Badge variant={s.live ? 'default' : 'secondary'}>{s.live ? 'Live' : 'Offline'}</Badge>
-          <Badge variant={s.published ? 'outline' : 'secondary'} className="text-xs">
-            {s.published ? 'Published' : 'Draft'}
-          </Badge>
-        </div>
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1">
-          <Button size="sm" variant={s.live ? 'destructive' : 'default'} className="h-7 text-xs px-2"
-            disabled={togglingLive === s.id} onClick={() => onToggleLive(s)}>
-            {liveButtonLabel}
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => onEdit(s)}>
-            <Pencil size={12} />
-          </Button>
-        </div>
-      </td>
-    </tr>
-  );
-}
+const emptyForm = { name: '', subdomain: '', email: '', phone: '', adminId: '' };
 
 function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSave, onClose }: {
   readonly modal: Modal;
@@ -83,9 +34,10 @@ function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSa
   readonly onClose: () => void;
 }) {
   if (!modal) return null;
-  const title = modal.type === 'create' ? 'Add Store' : `Edit Store — ${modal.store.name}`;
-  const saveLabel = modal.type === 'create' ? 'Create Store' : 'Save Changes';
-  const submitLabel = loading ? 'Saving…' : saveLabel;
+  const isCreate = modal.type === 'create';
+  const title = isCreate ? 'Add Store' : `Edit — ${modal.store.name}`;
+
+  const saveLabel = isCreate ? 'Create Store' : 'Save Changes';
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg">
@@ -95,19 +47,15 @@ function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSa
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1 col-span-2">
                 <Label>Store Name</Label>
-                <Input placeholder="My Jewellery Store" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus />
+                <Input placeholder="My Jewellery Store" value={form.name}
+                  onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus />
               </div>
-              <div className="space-y-1 col-span-2">
-                <Label>Store URL ID <span className="text-neutral-400 text-xs">(used in URL)</span></Label>
-                <Input placeholder="my-jewellery-store" value={form.storeUrlId}
-                  onChange={e => setForm({ ...form, storeUrlId: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
-                  required />
-              </div>
-              {modal.type === 'create' && (
+
+              {isCreate && (
                 <>
                   <div className="space-y-1 col-span-2">
-                    <Label>Store ID <span className="text-neutral-400 text-xs">(unique identifier used in URL)</span></Label>
-                    <Input placeholder="mystore" value={form.subdomain}
+                    <Label>Store ID <span className="text-neutral-400 text-xs">(unique, used in URL — e.g. my-store)</span></Label>
+                    <Input placeholder="my-store" value={form.subdomain}
                       onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} required />
                   </div>
                   <div className="space-y-1 col-span-2">
@@ -115,17 +63,30 @@ function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSa
                     <select value={form.adminId} onChange={e => setForm({ ...form, adminId: e.target.value })} required
                       className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-black">
                       <option value="">Select admin…</option>
-                      {admins.filter(a => !stores.some(s => s.adminId === a.id)).map(a => <option key={a.id} value={a.id}>{a.email}</option>)}
+                      {admins.filter(a => !stores.some(s => s.adminId === a.id)).map(a => (
+                        <option key={a.id} value={a.id}>{a.email}</option>
+                      ))}
                     </select>
                   </div>
                 </>
               )}
-              <div className="space-y-1"><Label>Email <span className="text-neutral-400 text-xs">(opt)</span></Label><Input type="email" placeholder="store@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
-              <div className="space-y-1"><Label>Phone <span className="text-neutral-400 text-xs">(opt)</span></Label><Input placeholder="+91 98765 43210" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
+
+              <div className="space-y-1">
+                <Label>Email <span className="text-neutral-400 text-xs">(opt)</span></Label>
+                <Input type="email" placeholder="store@example.com" value={form.email}
+                  onChange={e => setForm({ ...form, email: e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Phone <span className="text-neutral-400 text-xs">(opt)</span></Label>
+                <Input placeholder="+91 98765 43210" value={form.phone}
+                  onChange={e => setForm({ ...form, phone: e.target.value })} />
+              </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <div className="flex gap-2">
-              <Button type="submit" disabled={loading} className="flex-1">{submitLabel}</Button>
+              <Button type="submit" disabled={loading} className="flex-1">
+                {loading ? 'Saving…' : saveLabel}
+              </Button>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
             </div>
           </form>
@@ -142,7 +103,6 @@ export default function SuperStoresPage() {
   const [modal, setModal] = useState<Modal>(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
-  const [togglingLive, setTogglingLive] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
 
@@ -154,16 +114,10 @@ export default function SuperStoresPage() {
     ]);
     const authAdmins: Admin[] = adminsRes.data.users || [];
     const platformAdmins: PlatformAdmin[] = platformRes.data.admins || [];
-    // Map auth user id → availableDays via matching email
     const daysByEmail = new Map(platformAdmins.map(p => [p.email, p.availableDays ?? 0]));
     const adminEmailMap = new Map(authAdmins.map(a => [a.id, { email: a.email, availableDays: daysByEmail.get(a.email) ?? 0 }]));
-
     const rawStores = (storesRes.data.stores || []) as StoreRow[];
-    const enriched: StoreRow[] = rawStores.map(s => ({
-      ...s,
-      availableDays: adminEmailMap.get(s.adminId)?.availableDays ?? 0,
-    }));
-    setStores(enriched);
+    setStores(rawStores.map(s => ({ ...s, availableDays: adminEmailMap.get(s.adminId)?.availableDays ?? 0 })));
     setAdmins(authAdmins);
   }, []);
 
@@ -176,11 +130,9 @@ export default function SuperStoresPage() {
     const isCreate = modal?.type === 'create';
     try {
       if (isCreate) {
-        await api.post('/store/admin-create', { ...form });
+        await api.post('/store/admin-create', { name: form.name, subdomain: form.subdomain, storeUrlId: form.subdomain, email: form.email || undefined, phone: form.phone || undefined, adminId: form.adminId });
       } else if (modal?.type === 'edit') {
-        await api.patch(`/store/admin-update/${modal.store.id}`, {
-          name: form.name, storeUrlId: form.storeUrlId, email: form.email, phone: form.phone,
-        });
+        await api.patch(`/store/admin-update/${modal.store.id}`, { name: form.name, email: form.email || undefined, phone: form.phone || undefined });
       }
       close(); await load(); flash(isCreate ? 'Store created' : 'Store updated');
     } catch (err: unknown) {
@@ -188,17 +140,8 @@ export default function SuperStoresPage() {
     } finally { setLoading(false); }
   };
 
-  const toggleLive = async (s: StoreRow) => {
-    setTogglingLive(s.id);
-    try {
-      await api.patch(`/store/admin-toggle-live/${s.id}`, { live: !s.live });
-      await load();
-      flash(s.live ? 'Store set to offline' : 'Store set to live');
-    } finally { setTogglingLive(null); }
-  };
-
   const openEdit = (s: StoreRow) => {
-    setForm({ name: s.name, subdomain: s.subdomain, storeUrlId: s.storeUrlId || '', email: s.email || '', phone: s.phone || '', adminId: s.adminId });
+    setForm({ name: s.name, subdomain: s.subdomain, email: s.email || '', phone: s.phone || '', adminId: s.adminId });
     setModal({ type: 'edit', store: s });
     setError('');
   };
@@ -227,7 +170,7 @@ export default function SuperStoresPage() {
             <tr>
               <th className="text-left px-4 py-3 font-medium text-neutral-500">Store Name</th>
               <th className="text-left px-4 py-3 font-medium text-neutral-500">Store ID</th>
-              <th className="text-left px-4 py-3 font-medium text-neutral-500">Domain</th>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">URL</th>
               <th className="text-left px-4 py-3 font-medium text-neutral-500">Email / Phone</th>
               <th className="text-left px-4 py-3 font-medium text-neutral-500">Admin</th>
               <th className="text-left px-4 py-3 font-medium text-neutral-500">Days Left</th>
@@ -242,8 +185,30 @@ export default function SuperStoresPage() {
             {filtered.map(s => {
               const adminEmail = admins.find(a => a.id === s.adminId)?.email || s.adminId.slice(0, 8) + '…';
               return (
-                <StoreRow key={s.id} s={s} adminEmail={adminEmail}
-                  togglingLive={togglingLive} onToggleLive={toggleLive} onEdit={openEdit} />
+                <tr key={s.id} className="hover:bg-neutral-50/50">
+                  <td className="px-4 py-3 font-medium">{s.name}</td>
+                  <td className="px-4 py-3 text-xs font-mono text-neutral-500">{s.subdomain}</td>
+                  <td className="px-4 py-3">
+                    <a href={`${STOREFRONT_BASE}/s/${s.subdomain}`} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-indigo-600 hover:underline text-xs">
+                      View <ExternalLink size={11} />
+                    </a>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-xs">{s.email || '—'}</p>
+                    <p className="text-xs text-neutral-400">{s.phone || ''}</p>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-neutral-500">{adminEmail}</td>
+                  <td className="px-4 py-3 text-xs text-neutral-500">{s.availableDays} days</td>
+                  <td className="px-4 py-3">
+                    <Badge variant={s.published ? 'default' : 'secondary'}>{s.published ? 'Published' : 'Draft'}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Button size="sm" variant="outline" className="h-7 px-2" onClick={() => openEdit(s)}>
+                      <Pencil size={12} />
+                    </Button>
+                  </td>
+                </tr>
               );
             })}
           </tbody>
