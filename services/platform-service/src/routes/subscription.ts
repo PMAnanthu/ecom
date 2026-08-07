@@ -9,6 +9,8 @@ const schema = z.object({
   name: z.string(),
   maxProducts: z.number().int().positive().default(50),
   price: z.number().min(0).default(0),
+  currency: z.string().default('USD'),
+  billingPeriod: z.enum(['MONTHLY', 'QUARTERLY', 'YEARLY']).default('MONTHLY'),
   features: z.record(z.unknown()).default({}),
 });
 

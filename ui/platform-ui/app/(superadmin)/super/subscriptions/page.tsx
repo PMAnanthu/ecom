@@ -6,13 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
 
-interface Sub { id: string; name: string; maxProducts: number; price: number; features: Record<string, unknown> }
+type BillingPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+interface Sub { id: string; name: string; maxProducts: number; price: number; currency: string; billingPeriod: BillingPeriod; features: Record<string, unknown> }
+
+const PERIOD_LABELS: Record<BillingPeriod, string> = { MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', YEARLY: 'Yearly' };
+const PERIOD_BADGE: Record<BillingPeriod, 'default' | 'secondary' | 'outline'> = { MONTHLY: 'outline', QUARTERLY: 'secondary', YEARLY: 'default' };
 
 export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<Sub[]>([]);
-  const [form, setForm] = useState({ name: '', maxProducts: 50, price: 0 });
+  const [form, setForm] = useState({ name: '', maxProducts: 50, price: 0, currency: 'USD', billingPeriod: 'MONTHLY' as BillingPeriod });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -34,7 +39,7 @@ export default function SubscriptionsPage() {
     setLoading(true); setError('');
     try {
       await api.post('/platform/subscriptions', form);
-      setForm({ name: '', maxProducts: 50, price: 0 });
+      setForm({ name: '', maxProducts: 50, price: 0, currency: 'USD', billingPeriod: 'MONTHLY' });
       await load();
       flash('Plan created');
     } catch (err: unknown) {
@@ -59,21 +64,31 @@ export default function SubscriptionsPage() {
         <CardHeader><CardTitle className="text-base">New Plan</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={create} className="space-y-3">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1 col-span-3 sm:col-span-1">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1 col-span-2">
                 <Label>Plan Name</Label>
-                <Input placeholder="Pro" value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })} required />
+                <Input placeholder="Pro" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+              </div>
+              <div className="space-y-1">
+                <Label>Price</Label>
+                <Input type="number" min={0} step="0.01" value={form.price} onChange={e => setForm({ ...form, price: +e.target.value })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Currency</Label>
+                <Input placeholder="USD" value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value.toUpperCase().slice(0, 3) })} maxLength={3} />
+              </div>
+              <div className="space-y-1">
+                <Label>Billing Period</Label>
+                <select value={form.billingPeriod} onChange={e => setForm({ ...form, billingPeriod: e.target.value as BillingPeriod })}
+                  className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-black">
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="QUARTERLY">Quarterly</option>
+                  <option value="YEARLY">Yearly</option>
+                </select>
               </div>
               <div className="space-y-1">
                 <Label>Max Products</Label>
-                <Input type="number" min={1} value={form.maxProducts}
-                  onChange={e => setForm({ ...form, maxProducts: +e.target.value })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Price ($/mo)</Label>
-                <Input type="number" min={0} step="0.01" value={form.price}
-                  onChange={e => setForm({ ...form, price: +e.target.value })} />
+                <Input type="number" min={1} value={form.maxProducts} onChange={e => setForm({ ...form, maxProducts: +e.target.value })} />
               </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
@@ -88,9 +103,13 @@ export default function SubscriptionsPage() {
         {subs.map(s => (
           <div key={s.id} className="flex items-center justify-between p-4 bg-white rounded-xl border">
             <div>
-              <p className="font-semibold">{s.name}</p>
-              <p className="text-xs text-neutral-500 mt-0.5">
-                {s.maxProducts} products · {s.price === 0 ? 'Free' : `$${s.price}/mo`}
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold">{s.name}</p>
+                <Badge variant={PERIOD_BADGE[s.billingPeriod]}>{PERIOD_LABELS[s.billingPeriod]}</Badge>
+              </div>
+              <p className="text-xs text-neutral-500">
+                {s.maxProducts} products ·{' '}
+                {s.price === 0 ? 'Free' : `${s.currency} ${s.price.toLocaleString()}`}
               </p>
             </div>
             <Button size="sm" variant="destructive" onClick={() => del(s)}>

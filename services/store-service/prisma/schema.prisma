@@ -10,17 +10,20 @@ datasource db {
 }
 
 model Store {
-  id          String   @id @default(uuid())
-  adminId     String   @unique
-  name        String
-  subdomain   String   @unique
-  domain      String?
-  email       String?
-  phone       String?
-  published   Boolean  @default(false)
-  template    String   @default("default")
-  branding    Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(uuid())
+  adminId        String   @unique
+  name           String
+  subdomain      String   @unique
+  storeUrlId     String?  @unique
+  domain         String?
+  email          String?
+  phone          String?
+  published      Boolean  @default(false)
+  live           Boolean  @default(false)
+  availableDays  Int      @default(0)
+  template       String   @default("default")
+  branding       Json     @default("{}")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   @@schema("store_svc")
 }

@@ -16,18 +16,28 @@ model AdminUser {
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
   renewsAt       DateTime?
+  availableDays  Int           @default(0)
   createdAt      DateTime      @default(now())
   @@schema("platform_svc")
 }
 
 model Subscription {
-  id          String      @id @default(uuid())
-  name        String      @unique
-  maxProducts Int         @default(50)
-  price       Float       @default(0)
-  features    Json        @default("{}")
-  admins      AdminUser[]
-  createdAt   DateTime    @default(now())
+  id            String        @id @default(uuid())
+  name          String        @unique
+  maxProducts   Int           @default(50)
+  price         Float         @default(0)
+  currency      String        @default("USD")
+  billingPeriod BillingPeriod @default(MONTHLY)
+  features      Json          @default("{}")
+  admins        AdminUser[]
+  createdAt     DateTime      @default(now())
+  @@schema("platform_svc")
+}
+
+enum BillingPeriod {
+  MONTHLY
+  QUARTERLY
+  YEARLY
   @@schema("platform_svc")
 }
 

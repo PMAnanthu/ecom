@@ -46,9 +46,21 @@ adminRouter.patch('/:id/status', async (req: Request, res: Response) => {
 
 adminRouter.patch('/:id/subscription', async (req: Request, res: Response) => {
   const { subscriptionId, renewsAt } = req.body;
-  const data: { subscriptionId?: string | null; renewsAt?: Date | null } = {};
+  const data: { subscriptionId?: string | null; renewsAt?: Date | null; availableDays?: number } = {};
   if (subscriptionId !== undefined) data.subscriptionId = subscriptionId || null;
   if (renewsAt !== undefined) data.renewsAt = renewsAt ? new Date(renewsAt) : null;
+
+  // Reset availableDays based on billing period when subscription changes
+  if (subscriptionId) {
+    const sub = await prisma.subscription.findUnique({ where: { id: subscriptionId } });
+    if (sub) {
+      let days = 30;
+      if (sub.billingPeriod === 'YEARLY') days = 365;
+      else if (sub.billingPeriod === 'QUARTERLY') days = 90;
+      data.availableDays = days;
+    }
+  }
+
   const admin = await prisma.adminUser.update({ where: { id: req.params.id }, data });
   res.json({ admin });
 });

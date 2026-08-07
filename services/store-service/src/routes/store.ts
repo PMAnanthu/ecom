@@ -9,6 +9,7 @@ export const storeRouter = Router();
 const createSchema = z.object({
   name: z.string().min(1),
   subdomain: z.string().min(3).regex(/^[a-z0-9-]+$/),
+  storeUrlId: z.string().min(3).regex(/^[a-z0-9-]+$/),
   template: z.string().default('default'),
   email: z.string().email().optional(),
   phone: z.string().optional(),
@@ -17,12 +18,14 @@ const createSchema = z.object({
 
 const updateSchema = z.object({
   name: z.string().optional(),
+  storeUrlId: z.string().min(3).regex(/^[a-z0-9-]+$/).optional(),
   template: z.string().optional(),
   branding: z.record(z.unknown()).optional(),
   domain: z.string().optional(),
   email: z.string().email().optional(),
   phone: z.string().optional(),
   adminId: z.string().optional(),
+  availableDays: z.number().int().min(0).optional(),
 });
 
 // Super-admin: list all stores
@@ -42,10 +45,13 @@ storeRouter.post('/admin-create', async (req: Request, res: Response) => {
   const subdomainTaken = await prisma.store.findUnique({ where: { subdomain: parsed.data.subdomain } });
   if (subdomainTaken) { res.status(409).json({ error: 'Subdomain already taken' }); return; }
 
+  const urlIdTaken = await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } });
+  if (urlIdTaken) { res.status(409).json({ error: 'Store URL ID already taken' }); return; }
+
   const existing = await prisma.store.findUnique({ where: { adminId: assignedAdminId } });
   if (existing) { res.status(409).json({ error: 'This admin already has a store' }); return; }
 
-  const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
+  const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, storeUrlId: parsed.data.storeUrlId, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
   res.status(201).json({ store });
 });
 
@@ -54,6 +60,13 @@ storeRouter.patch('/admin-update/:id', async (req: Request, res: Response) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
   const store = await prisma.store.update({ where: { id: req.params.id }, data: parsed.data as Parameters<typeof prisma.store.update>[0]['data'] });
+  res.json({ store });
+});
+
+// Super-admin: toggle live/offline for any store
+storeRouter.patch('/admin-toggle-live/:id', async (req: Request, res: Response) => {
+  const { live } = req.body;
+  const store = await prisma.store.update({ where: { id: req.params.id }, data: { live: Boolean(live) } });
   res.json({ store });
 });
 
@@ -92,6 +105,9 @@ storeRouter.post('/', async (req: Request, res: Response) => {
 
   const subdomainTaken = await prisma.store.findUnique({ where: { subdomain: parsed.data.subdomain } });
   if (subdomainTaken) { res.status(409).json({ error: 'Subdomain already taken' }); return; }
+
+  const urlIdTaken = await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } });
+  if (urlIdTaken) { res.status(409).json({ error: 'Store URL ID already taken' }); return; }
 
   const store = await prisma.store.create({ data: { ...parsed.data, adminId } });
   res.status(201).json({ store });
