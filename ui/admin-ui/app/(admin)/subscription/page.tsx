@@ -93,7 +93,7 @@ export default function SubscriptionPage() {
           <p>No plans available. Contact your platform admin.</p>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
         {plans.map(plan => {
           const isCurrent = status?.subscription?.name === plan.name && !status?.expired;
           return (
@@ -104,13 +104,13 @@ export default function SubscriptionPage() {
                   <Badge className="bg-green-500 text-white text-xs">Current Plan</Badge>
                 </div>
               )}
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">{plan.name}</CardTitle>
+              <CardHeader className="pb-2 pt-6">
+                <CardTitle className="text-lg truncate">{plan.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="mb-3">
-                  <span className="text-3xl font-bold">{plan.price === 0 ? 'Free' : `${plan.currency} ${plan.price.toLocaleString()}`}</span>
-                  {plan.price > 0 && <span className="text-neutral-400 text-sm ml-1">/{plan.billingPeriod.toLowerCase()}</span>}
+                <div className="mb-2 flex items-baseline gap-1 flex-wrap">
+                  <span className="text-2xl font-bold">{plan.price === 0 ? 'Free' : `${plan.currency} ${plan.price.toLocaleString()}`}</span>
+                  {plan.price > 0 && <span className="text-neutral-400 text-sm">/ {plan.billingPeriod.toLowerCase()}</span>}
                 </div>
                 <p className="text-sm text-neutral-500 mb-4">{PERIOD_LABEL[plan.billingPeriod]} of access</p>
                 <Button className="w-full" variant={isCurrent ? 'outline' : 'default'} size="sm"
