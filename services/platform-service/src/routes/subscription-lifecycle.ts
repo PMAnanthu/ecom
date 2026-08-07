@@ -26,8 +26,6 @@ subscriptionLifecycleRouter.post('/buy', async (req: Request, res: Response) => 
   if (!sub) { res.status(404).json({ error: 'Subscription plan not found' }); return; }
 
   const newDays = daysForPeriod(sub.billingPeriod);
-  const suffix = remainingDays > 0 ? ` (+ ${remainingDays} remaining = ${totalDays} total)` : '';
-  const message = `Subscribed to ${sub.name} — ${newDays} days added${suffix}`;
   const randPart = Date.now().toString(36).slice(-6).toUpperCase();
   const paymentRef = `DUMMY-${Date.now()}-${randPart}`;
 
@@ -36,6 +34,9 @@ subscriptionLifecycleRouter.post('/buy', async (req: Request, res: Response) => 
   const remainingDays = existing?.availableDays && existing.availableDays > 0 ? existing.availableDays : 0;
   const totalDays = remainingDays + newDays;
   const renewsAt = new Date(Date.now() + totalDays * 86400000);
+
+  const suffix = remainingDays > 0 ? ` (+ ${remainingDays} remaining = ${totalDays} total)` : '';
+  const message = `Subscribed to ${sub.name} — ${newDays} days added${suffix}`;
 
   const admin = await prisma.adminUser.upsert({
     where: { email: parsed.data.adminEmail },
