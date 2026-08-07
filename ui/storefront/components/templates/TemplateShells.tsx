@@ -5,6 +5,19 @@ import { useState, ReactNode } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { useRouter, usePathname } from 'next/navigation';
+import { useThemeStore } from '@/lib/theme-store';
+import { Sun, Moon } from 'lucide-react';
+
+function ThemeToggle({ color }: Readonly<{ color?: string }>) {
+  const { mode, toggle } = useThemeStore();
+  return (
+    <button type="button" onClick={toggle} title={mode === 'dark' ? 'Switch to light' : 'Switch to dark'}
+      className="p-1.5 rounded-full transition-colors hover:bg-black/10"
+      style={color ? { color } : {}}>
+      {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </button>
+  );
+}
 
 const CATALOG_URL = process.env.NEXT_PUBLIC_CATALOG_URL || 'http://localhost:3004';
 
@@ -220,6 +233,7 @@ export function TopnavShell({ children }: Readonly<{ children: ReactNode }>) {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3 text-sm shrink-0">
+            <ThemeToggle color={nav.textColor} />
             {nav.showLogin && (user
               ? <button onClick={handleLogout} className="text-xs hover:opacity-75" style={textStyle}>Logout</button>
               : <Link href={`${base}/login`} className="hover:opacity-75" style={textStyle}>Sign in</Link>
@@ -232,6 +246,7 @@ export function TopnavShell({ children }: Readonly<{ children: ReactNode }>) {
             )}
           </div>
           <div className="flex md:hidden items-center gap-3 ml-auto">
+            <ThemeToggle color={nav.textColor} />
             {nav.showCart && (
               <Link href={`${base}/cart`} className="relative">
                 <span className="text-xl">🛒</span>
@@ -283,6 +298,7 @@ export function CardShell({ children }: Readonly<{ children: ReactNode }>) {
             ))}
           </nav>
           <div className="hidden md:flex items-center gap-3 text-sm shrink-0">
+            <ThemeToggle color={nav.textColor} />
             {nav.showLogin && (user
               ? <button onClick={handleLogout} className="text-xs hover:opacity-75" style={textStyle}>Logout</button>
               : <Link href={`${base}/login`} className="hover:opacity-75" style={textStyle}>Sign in</Link>

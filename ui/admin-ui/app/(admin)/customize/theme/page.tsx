@@ -60,6 +60,8 @@ function PresetSwatch({ preset, active, onClick }: Readonly<{ preset: { name: st
   );
 }
 
+interface CustomPreset { name: string; bg: string; text: string; accent: string }
+
 export default function CustomizeThemePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -67,6 +69,8 @@ export default function CustomizeThemePage() {
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('default');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
+  const [presetName, setPresetName] = useState('');
 
   useEffect(() => {
     api.get('/store').then(r => {
@@ -78,12 +82,32 @@ export default function CustomizeThemePage() {
         themeMode: b.themeMode || 'custom',
       });
       setSelectedTemplate(r.data.store?.template || 'default');
+      setCustomPresets(b.customPresets || []);
     }).catch(() => {});
     api.get('/platform/templates').then(r => setTemplates((r.data.templates || []).filter((t: StoreTemplate) => t.enabled))).catch(() => {});
   }, []);
 
-  const applyPreset = (preset: { bg: string; text: string; accent: string }, mode: 'light' | 'dark') => {
+  const applyPreset = (preset: { bg: string; text: string; accent: string }, mode: 'light' | 'dark' | 'custom') => {
     setTheme({ themeBg: preset.bg, themeText: preset.text, themeAccent: preset.accent, themeMode: mode });
+  };
+
+  const saveCustomPreset = async () => {
+    const name = presetName.trim() || `Custom ${customPresets.length + 1}`;
+    const newPreset: CustomPreset = { name, bg: theme.themeBg, text: theme.themeText, accent: theme.themeAccent };
+    const updated = [...customPresets, newPreset];
+    setCustomPresets(updated);
+    setPresetName('');
+    const storeRes = await api.get('/store');
+    const existing = storeRes.data.store?.branding || {};
+    await api.patch('/store', { branding: { ...existing, customPresets: updated } });
+  };
+
+  const removeCustomPreset = async (i: number) => {
+    const updated = customPresets.filter((_, j) => j !== i);
+    setCustomPresets(updated);
+    const storeRes = await api.get('/store');
+    const existing = storeRes.data.store?.branding || {};
+    await api.patch('/store', { branding: { ...existing, customPresets: updated } });
   };
 
   const saveTheme = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -180,6 +204,38 @@ export default function CustomizeThemePage() {
         </Card>
 
         {success && <p className="text-sm text-green-600">✓ Theme saved!</p>}
+
+        {/* Custom presets */}
+        <Card>
+          <CardHeader><CardTitle className="text-base">My Presets</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            {customPresets.length > 0 && (
+              <div className="grid grid-cols-5 gap-2">
+                {customPresets.map((p, i) => (
+                  <div key={`${p.name}-${p.bg}`} className="relative group">
+                    <button type="button" onClick={() => applyPreset(p, 'custom')}
+                      className={`w-full rounded-xl p-3 border-2 transition-all text-left ${theme.themeBg === p.bg && theme.themeMode === 'custom' ? 'border-black' : 'border-neutral-200 hover:border-neutral-400'}`}
+                      style={{ backgroundColor: p.bg }}>
+                      <div className="flex gap-1 mb-2">
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.accent }} />
+                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.text, opacity: 0.5 }} />
+                      </div>
+                      <p className="text-xs font-medium truncate" style={{ color: p.text }}>{p.name}</p>
+                    </button>
+                    <button type="button" onClick={() => removeCustomPreset(i)}
+                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 items-center pt-1">
+              <Input placeholder="Preset name (optional)" value={presetName} onChange={e => setPresetName(e.target.value)} className="h-8 text-sm flex-1" />
+              <Button type="button" size="sm" variant="outline" onClick={saveCustomPreset}>Save Current</Button>
+            </div>
+            <p className="text-xs text-neutral-400">Saves the current custom colors as a reusable preset.</p>
+          </CardContent>
+        </Card>
+
         <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save Theme'}</Button>
       </form>
     </div>

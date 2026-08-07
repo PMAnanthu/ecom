@@ -8,7 +8,7 @@ import { EmailConfigForm, WhatsAppConfigForm } from '@/components/notifications/
 interface Store { id: string; name: string }
 
 interface NotifConfig {
-  smtpHost?: string; smtpPort?: number; smtpUser?: string;
+  smtpHost?: string; smtpPort?: string; smtpUser?: string;
   smtpFrom?: string; emailEnabled?: boolean;
   waProvider?: 'TWILIO' | 'META'; waPhoneId?: string; waEnabled?: boolean;
 }

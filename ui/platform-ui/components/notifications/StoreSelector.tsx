@@ -20,7 +20,7 @@ export function StoreSelector({ stores, selectedId, onChange, configuredIds }: S
         <CardTitle className="text-sm font-semibold">Select Store</CardTitle>
       </CardHeader>
       <CardContent>
-        <Select value={selectedId} onValueChange={onChange}>
+        <Select value={selectedId} onValueChange={v => onChange(v as string)}>
           <SelectTrigger>
             <SelectValue placeholder="Choose a store…" />
           </SelectTrigger>
