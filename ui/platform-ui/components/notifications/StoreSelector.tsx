@@ -22,7 +22,9 @@ export function StoreSelector({ stores, selectedId, onChange, configuredIds }: S
       <CardContent>
         <Select value={selectedId} onValueChange={v => onChange(v as string)}>
           <SelectTrigger>
-            <SelectValue placeholder="Choose a store…" />
+            <SelectValue placeholder="Choose a store…">
+              {selectedId ? (stores.find(s => s.id === selectedId)?.name ?? selectedId) : 'Choose a store…'}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {stores.map(s => (

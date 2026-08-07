@@ -7,79 +7,104 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Trash2 } from 'lucide-react';
 
 interface StoreTemplate { id: string; key: string; name: string; description?: string; enabled: boolean }
 
-const LIGHT_PRESETS = [
-  { name: 'Ivory', bg: '#FFFFF0', text: '#1a1a1a', accent: '#4f46e5' },
-  { name: 'Snow', bg: '#FFFFFF', text: '#171717', accent: '#000000' },
-  { name: 'Cream', bg: '#FFF8F0', text: '#2d1b00', accent: '#c2410c' },
-  { name: 'Mint', bg: '#F0FFF4', text: '#14532d', accent: '#16a34a' },
-  { name: 'Sky', bg: '#F0F9FF', text: '#0c4a6e', accent: '#0ea5e9' },
+interface ColorSet { bg: string; text: string; accent: string }
+interface Preset { name: string; light: ColorSet; dark: ColorSet }
+
+const BUILT_IN_PRESETS: Preset[] = [
+  {
+    name: 'Classic',
+    light: { bg: '#ffffff', text: '#171717', accent: '#000000' },
+    dark:  { bg: '#0a0a0a', text: '#fafafa', accent: '#6366f1' },
+  },
+  {
+    name: 'Ocean',
+    light: { bg: '#f0f9ff', text: '#0c4a6e', accent: '#0ea5e9' },
+    dark:  { bg: '#0a1628', text: '#bae6fd', accent: '#38bdf8' },
+  },
+  {
+    name: 'Forest',
+    light: { bg: '#f0fff4', text: '#14532d', accent: '#16a34a' },
+    dark:  { bg: '#0f1f0f', text: '#d1fae5', accent: '#34d399' },
+  },
+  {
+    name: 'Sunset',
+    light: { bg: '#fff7ed', text: '#7c2d12', accent: '#ea580c' },
+    dark:  { bg: '#1c0a00', text: '#fed7aa', accent: '#f97316' },
+  },
+  {
+    name: 'Plum',
+    light: { bg: '#faf5ff', text: '#581c87', accent: '#9333ea' },
+    dark:  { bg: '#1a0a1a', text: '#f5d0fe', accent: '#c026d3' },
+  },
 ];
 
-const DARK_PRESETS = [
-  { name: 'Noir', bg: '#0a0a0a', text: '#fafafa', accent: '#6366f1' },
-  { name: 'Slate', bg: '#1e293b', text: '#e2e8f0', accent: '#38bdf8' },
-  { name: 'Forest', bg: '#0f1f0f', text: '#d1fae5', accent: '#34d399' },
-  { name: 'Plum', bg: '#1a0a1a', text: '#f5d0fe', accent: '#c026d3' },
-  { name: 'Amber', bg: '#1c1000', text: '#fef3c7', accent: '#f59e0b' },
-];
-
-interface ThemeConfig {
-  themeBg: string;
-  themeText: string;
-  themeAccent: string;
-  themeMode: 'light' | 'dark' | 'custom';
+interface ThemeData {
+  lightBg: string; lightText: string; lightAccent: string;
+  darkBg: string;  darkText: string;  darkAccent: string;
 }
 
-const defaultTheme: ThemeConfig = { themeBg: '#ffffff', themeText: '#171717', themeAccent: '#000000', themeMode: 'custom' };
+const defaultTheme: ThemeData = {
+  lightBg: '#ffffff', lightText: '#171717', lightAccent: '#000000',
+  darkBg: '#0a0a0a',  darkText: '#fafafa',  darkAccent: '#6366f1',
+};
 
 function ColorRow({ label, value, onChange }: Readonly<{ label: string; value: string; onChange: (v: string) => void }>) {
   return (
     <div className="flex items-center gap-3">
       <input type="color" value={value} onChange={e => onChange(e.target.value)}
-        className="w-10 h-8 rounded border cursor-pointer shrink-0" />
-      <Input value={value} onChange={e => onChange(e.target.value)} className="font-mono h-8 text-sm w-32" maxLength={7} />
-      <span className="text-sm text-neutral-500">{label}</span>
+        className="w-9 h-8 rounded border cursor-pointer shrink-0" />
+      <Input value={value} onChange={e => onChange(e.target.value)} className="font-mono h-8 text-sm w-28" maxLength={7} />
+      <span className="text-sm text-neutral-500 flex-1">{label}</span>
     </div>
   );
 }
 
-function PresetSwatch({ preset, active, onClick }: Readonly<{ preset: { name: string; bg: string; text: string; accent: string }; active: boolean; onClick: () => void }>) {
+function PresetCard({ preset, active, onClick }: Readonly<{ preset: Preset; active: boolean; onClick: () => void }>) {
   return (
     <button type="button" onClick={onClick}
-      className={`rounded-xl p-3 border-2 transition-all text-left ${active ? 'border-black' : 'border-neutral-200 hover:border-neutral-400'}`}
-      style={{ backgroundColor: preset.bg }}>
-      <div className="flex gap-1 mb-2">
-        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.accent }} />
-        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: preset.text, opacity: 0.5 }} />
+      className={`rounded-xl border-2 overflow-hidden transition-all text-left w-full ${active ? 'border-black' : 'border-neutral-200 hover:border-neutral-400'}`}>
+      <div className="flex h-10">
+        <div className="flex-1 flex items-center justify-center gap-1.5" style={{ backgroundColor: preset.light.bg }}>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: preset.light.accent }} />
+          <span className="text-[9px] font-medium" style={{ color: preset.light.text }}>☀</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center gap-1.5" style={{ backgroundColor: preset.dark.bg }}>
+          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: preset.dark.accent }} />
+          <span className="text-[9px] font-medium" style={{ color: preset.dark.text }}>🌙</span>
+        </div>
       </div>
-      <p className="text-xs font-medium" style={{ color: preset.text }}>{preset.name}</p>
+      <div className="px-2 py-1.5 bg-white border-t">
+        <p className="text-xs font-medium truncate">{preset.name}</p>
+      </div>
     </button>
   );
 }
 
-interface CustomPreset { name: string; bg: string; text: string; accent: string }
-
 export default function CustomizeThemePage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [theme, setTheme] = useState<ThemeConfig>(defaultTheme);
+  const [theme, setTheme] = useState<ThemeData>(defaultTheme);
   const [templates, setTemplates] = useState<StoreTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState('default');
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [customPresets, setCustomPresets] = useState<CustomPreset[]>([]);
+  const [customPresets, setCustomPresets] = useState<Preset[]>([]);
   const [presetName, setPresetName] = useState('');
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   useEffect(() => {
     api.get('/store').then(r => {
       const b = r.data.store?.branding || {};
       setTheme({
-        themeBg: b.themeBg || '#ffffff',
-        themeText: b.themeText || '#171717',
-        themeAccent: b.themeAccent || '#000000',
-        themeMode: b.themeMode || 'custom',
+        lightBg: b.lightBg || b.themeBg || '#ffffff',
+        lightText: b.lightText || b.themeText || '#171717',
+        lightAccent: b.lightAccent || b.themeAccent || '#000000',
+        darkBg: b.darkBg || '#0a0a0a',
+        darkText: b.darkText || '#fafafa',
+        darkAccent: b.darkAccent || '#6366f1',
       });
       setSelectedTemplate(r.data.store?.template || 'default');
       setCustomPresets(b.customPresets || []);
@@ -87,13 +112,14 @@ export default function CustomizeThemePage() {
     api.get('/platform/templates').then(r => setTemplates((r.data.templates || []).filter((t: StoreTemplate) => t.enabled))).catch(() => {});
   }, []);
 
-  const applyPreset = (preset: { bg: string; text: string; accent: string }, mode: 'light' | 'dark' | 'custom') => {
-    setTheme({ themeBg: preset.bg, themeText: preset.text, themeAccent: preset.accent, themeMode: mode });
+  const applyPreset = (p: Preset) => {
+    setActivePreset(p.name);
+    setTheme({ lightBg: p.light.bg, lightText: p.light.text, lightAccent: p.light.accent, darkBg: p.dark.bg, darkText: p.dark.text, darkAccent: p.dark.accent });
   };
 
   const saveCustomPreset = async () => {
-    const name = presetName.trim() || `Custom ${customPresets.length + 1}`;
-    const newPreset: CustomPreset = { name, bg: theme.themeBg, text: theme.themeText, accent: theme.themeAccent };
+    const name = presetName.trim() || `My Preset ${customPresets.length + 1}`;
+    const newPreset: Preset = { name, light: { bg: theme.lightBg, text: theme.lightText, accent: theme.lightAccent }, dark: { bg: theme.darkBg, text: theme.darkText, accent: theme.darkAccent } };
     const updated = [...customPresets, newPreset];
     setCustomPresets(updated);
     setPresetName('');
@@ -116,7 +142,8 @@ export default function CustomizeThemePage() {
     try {
       const storeRes = await api.get('/store');
       const existing = storeRes.data.store?.branding || {};
-      await api.patch('/store', { branding: { ...existing, ...theme } });
+      // Save both new fields and legacy fields for backward compat
+      await api.patch('/store', { branding: { ...existing, ...theme, themeBg: theme.lightBg, themeText: theme.lightText, themeAccent: theme.lightAccent } });
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } finally { setSaving(false); }
@@ -124,17 +151,17 @@ export default function CustomizeThemePage() {
 
   const saveTemplate = async (key: string) => {
     setSavingTemplate(true);
-    try {
-      await api.patch('/store', { template: key });
-      setSelectedTemplate(key);
-    } finally { setSavingTemplate(false); }
+    try { await api.patch('/store', { template: key }); setSelectedTemplate(key); }
+    finally { setSavingTemplate(false); }
   };
+
+  const allPresets = [...BUILT_IN_PRESETS, ...customPresets];
 
   return (
     <div className="max-w-2xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold mb-1">Theme & Template</h1>
-        <p className="text-sm text-neutral-500">Customize colors and choose your storefront layout.</p>
+        <p className="text-sm text-neutral-500">Each preset defines light and dark mode colors together.</p>
       </div>
 
       {/* Storefront Template */}
@@ -153,7 +180,6 @@ export default function CustomizeThemePage() {
                   <p className="text-sm font-medium">{t.name}</p>
                   {selectedTemplate === t.key && <Badge className="text-xs">Active</Badge>}
                 </div>
-                {t.description && <p className="text-xs text-neutral-400 mt-0.5 line-clamp-1">{t.description}</p>}
               </button>
             ))}
           </div>
@@ -161,81 +187,66 @@ export default function CustomizeThemePage() {
         </CardContent>
       </Card>
 
-      {/* Color Theme */}
-      <form onSubmit={saveTheme} className="space-y-6">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Light Presets</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-5 gap-2">
-              {LIGHT_PRESETS.map(p => (
-                <PresetSwatch key={p.name} preset={p}
-                  active={theme.themeMode === 'light' && theme.themeBg === p.bg}
-                  onClick={() => applyPreset(p, 'light')} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Presets */}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Presets</CardTitle></CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+            {allPresets.map((p, i) => (
+              <div key={`${p.name}-${i}`} className="relative group">
+                <PresetCard preset={p} active={activePreset === p.name} onClick={() => applyPreset(p)} />
+                {i >= BUILT_IN_PRESETS.length && (
+                  <button type="button" onClick={() => removeCustomPreset(i - BUILT_IN_PRESETS.length)}
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">
+                    <Trash2 size={10} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader><CardTitle className="text-base">Dark Presets</CardTitle></CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-5 gap-2">
-              {DARK_PRESETS.map(p => (
-                <PresetSwatch key={p.name} preset={p}
-                  active={theme.themeMode === 'dark' && theme.themeBg === p.bg}
-                  onClick={() => applyPreset(p, 'dark')} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+      {/* Color editors */}
+      <form onSubmit={saveTheme} className="space-y-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2">☀️ Light Mode</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <ColorRow label="Background" value={theme.lightBg} onChange={v => setTheme(t => ({ ...t, lightBg: v }))} />
+              <ColorRow label="Text" value={theme.lightText} onChange={v => setTheme(t => ({ ...t, lightText: v }))} />
+              <ColorRow label="Accent / CTA" value={theme.lightAccent} onChange={v => setTheme(t => ({ ...t, lightAccent: v }))} />
+              <div className="mt-2 p-2.5 rounded-lg border text-xs" style={{ backgroundColor: theme.lightBg, color: theme.lightText }}>
+                Preview — <span style={{ color: theme.lightAccent, fontWeight: 600 }}>Accent</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle className="text-base flex items-center gap-2">🌙 Dark Mode</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <ColorRow label="Background" value={theme.darkBg} onChange={v => setTheme(t => ({ ...t, darkBg: v }))} />
+              <ColorRow label="Text" value={theme.darkText} onChange={v => setTheme(t => ({ ...t, darkText: v }))} />
+              <ColorRow label="Accent / CTA" value={theme.darkAccent} onChange={v => setTheme(t => ({ ...t, darkAccent: v }))} />
+              <div className="mt-2 p-2.5 rounded-lg border text-xs" style={{ backgroundColor: theme.darkBg, color: theme.darkText }}>
+                Preview — <span style={{ color: theme.darkAccent, fontWeight: 600 }}>Accent</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
+        {/* Save as custom preset */}
         <Card>
-          <CardHeader><CardTitle className="text-base">Custom Colors</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <ColorRow label="Background" value={theme.themeBg} onChange={v => setTheme(t => ({ ...t, themeBg: v, themeMode: 'custom' }))} />
-            <ColorRow label="Text" value={theme.themeText} onChange={v => setTheme(t => ({ ...t, themeText: v, themeMode: 'custom' }))} />
-            <ColorRow label="Accent / CTA" value={theme.themeAccent} onChange={v => setTheme(t => ({ ...t, themeAccent: v, themeMode: 'custom' }))} />
-            <div className="mt-3 p-3 rounded-lg border text-sm" style={{ backgroundColor: theme.themeBg, color: theme.themeText }}>
-              <span>Preview — </span>
-              <span style={{ color: theme.themeAccent, fontWeight: 600 }}>Accent text</span>
-              <span> · Normal text</span>
+          <CardHeader><CardTitle className="text-base">Save as Custom Preset</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Input placeholder="Preset name" value={presetName} onChange={e => setPresetName(e.target.value)} className="h-8 text-sm" />
+              <Button type="button" variant="outline" size="sm" onClick={saveCustomPreset}>Save Preset</Button>
             </div>
+            <p className="text-xs text-neutral-400 mt-1.5">Saves current light + dark colors as a reusable preset.</p>
           </CardContent>
         </Card>
 
         {success && <p className="text-sm text-green-600">✓ Theme saved!</p>}
-
-        {/* Custom presets */}
-        <Card>
-          <CardHeader><CardTitle className="text-base">My Presets</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {customPresets.length > 0 && (
-              <div className="grid grid-cols-5 gap-2">
-                {customPresets.map((p, i) => (
-                  <div key={`${p.name}-${p.bg}`} className="relative group">
-                    <button type="button" onClick={() => applyPreset(p, 'custom')}
-                      className={`w-full rounded-xl p-3 border-2 transition-all text-left ${theme.themeBg === p.bg && theme.themeMode === 'custom' ? 'border-black' : 'border-neutral-200 hover:border-neutral-400'}`}
-                      style={{ backgroundColor: p.bg }}>
-                      <div className="flex gap-1 mb-2">
-                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.accent }} />
-                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.text, opacity: 0.5 }} />
-                      </div>
-                      <p className="text-xs font-medium truncate" style={{ color: p.text }}>{p.name}</p>
-                    </button>
-                    <button type="button" onClick={() => removeCustomPreset(i)}
-                      className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs hidden group-hover:flex items-center justify-center">×</button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2 items-center pt-1">
-              <Input placeholder="Preset name (optional)" value={presetName} onChange={e => setPresetName(e.target.value)} className="h-8 text-sm flex-1" />
-              <Button type="button" size="sm" variant="outline" onClick={saveCustomPreset}>Save Current</Button>
-            </div>
-            <p className="text-xs text-neutral-400">Saves the current custom colors as a reusable preset.</p>
-          </CardContent>
-        </Card>
-
         <Button type="submit" disabled={saving} className="w-full">{saving ? 'Saving…' : 'Save Theme'}</Button>
       </form>
     </div>
@@ -244,7 +255,7 @@ export default function CustomizeThemePage() {
 
 function TemplateMockup({ templateKey }: Readonly<{ templateKey: string }>) {
   if (templateKey === 'sidebar') return (
-    <div className="w-full h-full flex text-[6px]">
+    <div className="w-full h-full flex">
       <div className="w-10 bg-white border-r h-full flex flex-col gap-1 p-1">
         <div className="h-1.5 bg-black rounded w-8 mb-1" />
         {[1,2,3].map(i => <div key={i} className="h-1 bg-neutral-200 rounded w-7" />)}
