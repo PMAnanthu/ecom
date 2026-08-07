@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, ImagePlus } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Trash2, ImagePlus, X } from 'lucide-react';
 
 const STORE_SERVICE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
 
@@ -30,6 +31,7 @@ const GRADIENT_OPTIONS = [
 ];
 
 interface Slide { image: string; link: string }
+type DisplayStyle = 'cards' | 'circle' | 'rectangle';
 
 interface HomeConfig {
   heroType: 'static' | 'sliding';
@@ -39,6 +41,15 @@ interface HomeConfig {
   heroGradient: string;
   heroBgImage: string;
   heroSlides: Slide[];
+  // Section panels
+  showCategories: boolean;
+  categoriesStyle: DisplayStyle;
+  showNewArrivals: boolean;
+  newArrivalsStyle: DisplayStyle;
+  newArrivalIds: string[];
+  showFeatured: boolean;
+  featuredStyle: DisplayStyle;
+  featuredIds: string[];
 }
 
 const defaultConfig: HomeConfig = {
@@ -49,7 +60,24 @@ const defaultConfig: HomeConfig = {
   heroGradient: 'indigo-purple',
   heroBgImage: '',
   heroSlides: [],
+  showCategories: false,
+  categoriesStyle: 'cards',
+  showNewArrivals: false,
+  newArrivalsStyle: 'cards',
+  newArrivalIds: [],
+  showFeatured: false,
+  featuredStyle: 'cards',
+  featuredIds: [],
 };
+
+interface Product { id: string; name: string; images: string[] }
+interface Category { id: string; name: string }
+
+const STYLE_OPTIONS: { value: DisplayStyle; label: string }[] = [
+  { value: 'cards', label: 'Cards (album frame)' },
+  { value: 'circle', label: 'Circle (round image + name)' },
+  { value: 'rectangle', label: 'Rectangle (tall image + name)' },
+];
 
 export default function CustomizePage() {
   const [loading, setLoading] = useState(true);
@@ -59,26 +87,43 @@ export default function CustomizePage() {
   const [bgPreview, setBgPreview] = useState('');
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [slideFiles, setSlideFiles] = useState<(File | null)[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const bgRef = useRef<HTMLInputElement>(null);
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => {
-    api.get('/store').then((r) => {
-      const b = r.data.store?.branding || {};
-      const loaded: HomeConfig = {
-        heroType: b.heroType || 'static',
-        heroHeading: b.heroHeading || '',
-        heroSubtext: b.heroSubtext || '',
-        heroStyle: b.heroStyle || 'dark',
-        heroGradient: b.heroGradient || 'indigo-purple',
-        heroBgImage: b.heroBgImage || '',
-        heroSlides: b.heroSlides || [],
-      };
-      setConfig(loaded);
-      setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
-      if (b.heroBgImage) setBgPreview(b.heroBgImage.startsWith('http') ? b.heroBgImage : `${STORE_SERVICE}${b.heroBgImage}`);
-    }).finally(() => setLoading(false));
+  const loadData = useCallback(async () => {
+    const [storeRes, productsRes, catsRes] = await Promise.all([
+      api.get('/store'),
+      api.get('/catalog/products?limit=100'),
+      api.get('/catalog/categories'),
+    ]);
+    const b = storeRes.data.store?.branding || {};
+    const loaded: HomeConfig = {
+      heroType: b.heroType || 'static',
+      heroHeading: b.heroHeading || '',
+      heroSubtext: b.heroSubtext || '',
+      heroStyle: b.heroStyle || 'dark',
+      heroGradient: b.heroGradient || 'indigo-purple',
+      heroBgImage: b.heroBgImage || '',
+      heroSlides: b.heroSlides || [],
+      showCategories: b.showCategories || false,
+      categoriesStyle: b.categoriesStyle || 'cards',
+      showNewArrivals: b.showNewArrivals || false,
+      newArrivalsStyle: b.newArrivalsStyle || 'cards',
+      newArrivalIds: b.newArrivalIds || [],
+      showFeatured: b.showFeatured || false,
+      featuredStyle: b.featuredStyle || 'cards',
+      featuredIds: b.featuredIds || [],
+    };
+    setConfig(loaded);
+    setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
+    if (b.heroBgImage) setBgPreview(b.heroBgImage.startsWith('http') ? b.heroBgImage : `${STORE_SERVICE}${b.heroBgImage}`);
+    setProducts(productsRes.data.products || []);
+    setCategories(catsRes.data.categories || []);
   }, []);
+
+  useEffect(() => { loadData().finally(() => setLoading(false)); }, [loadData]);
 
   const uploadFile = async (file: File): Promise<string> => {
     const fd = new FormData();
@@ -88,6 +133,17 @@ export default function CustomizePage() {
       method: 'POST', headers: { Authorization: `Bearer ${token ?? ''}` }, body: fd,
     });
     return (await res.json()).url as string;
+  };
+
+  const saveSections = async () => {
+    setSaving(true);
+    try {
+      const storeRes = await api.get('/store');
+      const existing = storeRes.data.store?.branding || {};
+      await api.patch('/store', { branding: { ...existing, ...config } });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } finally { setSaving(false); }
   };
 
   const addSlide = () => {
@@ -256,6 +312,115 @@ export default function CustomizePage() {
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </form>
+
+      {/* ── SECTION PANELS (outside form, saved inline) ── */}
+      <SectionPanel
+        title="Show by Category"
+        enabled={config.showCategories}
+        onToggle={v => setConfig(c => ({ ...c, showCategories: v }))}
+        style={config.categoriesStyle}
+        onStyleChange={v => setConfig(c => ({ ...c, categoriesStyle: v as DisplayStyle }))}
+        onSave={() => saveSections()}
+        saving={saving}>
+        <p className="text-xs text-neutral-400">All your store categories will be displayed in this section.</p>
+      </SectionPanel>
+
+      <SectionPanel
+        title="New Arrivals"
+        enabled={config.showNewArrivals}
+        onToggle={v => setConfig(c => ({ ...c, showNewArrivals: v }))}
+        style={config.newArrivalsStyle}
+        onStyleChange={v => setConfig(c => ({ ...c, newArrivalsStyle: v as DisplayStyle }))}
+        onSave={() => saveSections()}
+        saving={saving}>
+        <ProductPicker
+          label="Select up to 10 products"
+          products={products}
+          selected={config.newArrivalIds}
+          onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))}
+        />
+      </SectionPanel>
+
+      <SectionPanel
+        title="Featured"
+        enabled={config.showFeatured}
+        onToggle={v => setConfig(c => ({ ...c, showFeatured: v }))}
+        style={config.featuredStyle}
+        onStyleChange={v => setConfig(c => ({ ...c, featuredStyle: v as DisplayStyle }))}
+        onSave={() => saveSections()}
+        saving={saving}>
+        <ProductPicker
+          label="Select up to 10 products"
+          products={products}
+          selected={config.featuredIds}
+          onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))}
+        />
+      </SectionPanel>
+    </div>
+  );
+}
+
+function SectionPanel({ title, enabled, onToggle, style, onStyleChange, onSave, saving, children }: Readonly<{
+  title: string; enabled: boolean; onToggle: (v: boolean) => void;
+  style: string; onStyleChange: (v: string) => void;
+  onSave: () => void; saving: boolean; children?: React.ReactNode;
+}>) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">{title}</CardTitle>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" checked={enabled} onChange={e => onToggle(e.target.checked)} className="accent-black w-4 h-4" />
+            <span className="text-sm text-neutral-500">{enabled ? 'Enabled' : 'Disabled'}</span>
+          </label>
+        </div>
+      </CardHeader>
+      {enabled && (
+        <CardContent className="space-y-4">
+          <div className="space-y-1">
+            <Label>Display Style</Label>
+            <Select value={style} onValueChange={v => v && onStyleChange(v)}>
+              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {STYLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {children}
+          <Button size="sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+function ProductPicker({ label, products, selected, onChange }: Readonly<{
+  label: string; products: Product[]; selected: string[]; onChange: (ids: string[]) => void;
+}>) {
+  const toggle = (id: string) => {
+    if (selected.includes(id)) { onChange(selected.filter(s => s !== id)); }
+    else if (selected.length < 10) { onChange([...selected, id]); }
+  };
+  return (
+    <div className="space-y-2">
+      <Label>{label} ({selected.length}/10)</Label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2">
+        {products.map(p => {
+          const isSelected = selected.includes(p.id);
+          return (
+            <button key={p.id} type="button" onClick={() => toggle(p.id)}
+              className={`flex items-center gap-2 p-2 rounded-lg border text-left text-xs transition-colors ${isSelected ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}>
+              {p.images?.[0]
+                ? <img src={p.images[0]} alt="" className="w-8 h-8 object-cover rounded shrink-0" />
+                : <div className="w-8 h-8 bg-neutral-200 rounded shrink-0" />}
+              <span className="truncate font-medium">{p.name}</span>
+              {isSelected && <X size={12} className="shrink-0 ml-auto text-neutral-400" />}
+            </button>
+          );
+        })}
+        {products.length === 0 && <p className="text-neutral-400 text-xs col-span-3 py-4 text-center">No products yet.</p>}
+      </div>
     </div>
   );
 }
