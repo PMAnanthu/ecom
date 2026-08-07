@@ -43,11 +43,39 @@ adminMgmtRouter.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ user, store });
 });
 
+// Create a customer account (super-admin)
+adminMgmtRouter.post('/customers', async (req: Request, res: Response) => {
+  const parsed = z.object({
+    email: z.string().email(),
+    password: z.string().min(6),
+    username: z.string().min(1).optional(),
+    storeId: z.string().optional(),
+  }).safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+
+  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (existing) { res.status(409).json({ error: 'Email already in use' }); return; }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const user = await prisma.user.create({
+    data: { email: parsed.data.email, passwordHash, role: 'USER', storeId: parsed.data.storeId ?? null },
+    select: { id: true, email: true, role: true, storeId: true, createdAt: true },
+  });
+  res.status(201).json({ user });
+});
+
+// Block/unblock a customer
+adminMgmtRouter.patch('/customers/:id/status', async (req: Request, res: Response) => {
+  const { blocked } = req.body;
+  await prisma.user.update({ where: { id: req.params.id }, data: { blocked: Boolean(blocked) } });
+  res.json({ success: true, blocked });
+});
+
 // List all customers (role=USER)
 adminMgmtRouter.get('/customers', async (_req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     where: { role: 'USER' },
-    select: { id: true, email: true, storeId: true, createdAt: true },
+    select: { id: true, email: true, storeId: true, blocked: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
   });
   res.json({ users });

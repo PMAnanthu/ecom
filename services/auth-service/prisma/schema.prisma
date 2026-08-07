@@ -16,6 +16,7 @@ model User {
   role           Role      @default(USER)
   storeId        String?
   subscriptionId String?
+  blocked        Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   @@schema("auth_svc")
