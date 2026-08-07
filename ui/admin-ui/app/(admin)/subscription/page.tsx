@@ -93,29 +93,29 @@ export default function SubscriptionPage() {
           <p>No plans available. Contact your platform admin.</p>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         {plans.map(plan => {
           const isCurrent = status?.subscription?.name === plan.name && !status?.expired;
           return (
-            <Card key={plan.id} className={`relative cursor-pointer transition-all hover:shadow-md ${isCurrent ? 'border-green-400 bg-green-50/30' : 'hover:border-black'}`}
+            <Card key={plan.id} className={`relative cursor-pointer transition-all hover:shadow-lg ${isCurrent ? 'border-2 border-green-400 bg-green-50/30' : 'hover:border-black hover:border-2'}`}
               onClick={() => !isCurrent && openConfirm(plan)}>
               {isCurrent && (
-                <div className="absolute -top-2.5 left-4">
-                  <Badge className="bg-green-500 text-white text-xs">Current Plan</Badge>
+                <div className="absolute -top-3 left-5">
+                  <Badge className="bg-green-500 text-white text-xs px-3 py-1">Current Plan</Badge>
                 </div>
               )}
-              <CardHeader className="pb-2 pt-6">
-                <CardTitle className="text-lg truncate">{plan.name}</CardTitle>
+              <CardHeader className="pb-2 pt-7">
+                <CardTitle className="text-xl">{plan.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="mb-2 flex items-baseline gap-1 flex-wrap">
-                  <span className="text-2xl font-bold">{plan.price === 0 ? 'Free' : `${plan.currency} ${plan.price.toLocaleString()}`}</span>
+                <div className="mb-3 flex items-baseline gap-2 flex-wrap min-h-[2.5rem]">
+                  <span className="text-3xl font-bold">{plan.price === 0 ? 'Free' : `${plan.currency} ${plan.price.toLocaleString()}`}</span>
                   {plan.price > 0 && <span className="text-neutral-400 text-sm">/ {plan.billingPeriod.toLowerCase()}</span>}
                 </div>
-                <p className="text-sm text-neutral-500 mb-4">{PERIOD_LABEL[plan.billingPeriod]} of access</p>
-                <Button className="w-full" variant={isCurrent ? 'outline' : 'default'} size="sm"
-                  onClick={e => { e.stopPropagation(); if (!isCurrent) openConfirm(plan); }}>
-                  {isCurrent ? 'Renew' : 'Select Plan'}
+                <p className="text-sm text-neutral-500 mb-5">{PERIOD_LABEL[plan.billingPeriod]} of access</p>
+                <Button className="w-full" variant={isCurrent ? 'outline' : 'default'}
+                  onClick={e => { e.stopPropagation(); openConfirm(plan); }}>
+                  {isCurrent ? '+ Renew / Add Days' : 'Select Plan'}
                 </Button>
               </CardContent>
             </Card>
@@ -185,9 +185,13 @@ export default function SubscriptionPage() {
                   {error && <p className="text-sm text-red-500">{error}</p>}
 
                   <div className="flex gap-2">
-                    <Button className="flex-1" onClick={pay} disabled={payStep === 'processing'}>
-                      {payStep === 'processing' ? <><Loader2 size={14} className="mr-2 animate-spin" />Processing…</> : `Pay ${selected.price === 0 ? 'Free' : `${selected.currency} ${selected.price.toLocaleString()}`}`}
-                    </Button>
+                    {(() => {
+                      const priceLabel = selected.price === 0 ? 'Free' : `${selected.currency} ${selected.price.toLocaleString()}`;
+                      const btnContent = payStep === 'processing'
+                        ? <><Loader2 size={14} className="mr-2 animate-spin" />Processing…</>
+                        : `Pay ${priceLabel}`;
+                      return <Button className="flex-1" onClick={pay} disabled={payStep === 'processing'}>{btnContent}</Button>;
+                    })()}
                     <Button variant="outline" onClick={() => setPayStep('idle')}>Cancel</Button>
                   </div>
                 </CardContent>

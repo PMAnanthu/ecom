@@ -17,7 +17,7 @@ subscriptionLifecycleRouter.post('/buy', async (req: Request, res: Response) => 
   const parsed = z.object({
     subscriptionId: z.string(),
     adminEmail: z.string().email(),
-    paymentMethod: z.string().default('dummy'), // future: stripe/razorpay
+    paymentMethod: z.string().default('dummy'),
     cardLast4: z.string().optional(),
   }).safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
@@ -25,24 +25,32 @@ subscriptionLifecycleRouter.post('/buy', async (req: Request, res: Response) => 
   const sub = await prisma.subscription.findUnique({ where: { id: parsed.data.subscriptionId } });
   if (!sub) { res.status(404).json({ error: 'Subscription plan not found' }); return; }
 
-  const days = daysForPeriod(sub.billingPeriod);
-  const renewsAt = new Date(Date.now() + days * 86400000);
+  const newDays = daysForPeriod(sub.billingPeriod);
+  const suffix = remainingDays > 0 ? ` (+ ${remainingDays} remaining = ${totalDays} total)` : '';
+  const message = `Subscribed to ${sub.name} — ${newDays} days added${suffix}`;
+  const randPart = Date.now().toString(36).slice(-6).toUpperCase();
+  const paymentRef = `DUMMY-${Date.now()}-${randPart}`;
 
-  // Dummy payment: always succeeds
-  const paymentRef = `DUMMY-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  // Get existing admin to add remaining days on top
+  const existing = await prisma.adminUser.findUnique({ where: { email: parsed.data.adminEmail } });
+  const remainingDays = existing?.availableDays && existing.availableDays > 0 ? existing.availableDays : 0;
+  const totalDays = remainingDays + newDays;
+  const renewsAt = new Date(Date.now() + totalDays * 86400000);
 
   const admin = await prisma.adminUser.upsert({
     where: { email: parsed.data.adminEmail },
-    update: { subscriptionId: sub.id, availableDays: days, renewsAt },
-    create: { email: parsed.data.adminEmail, subscriptionId: sub.id, availableDays: days, renewsAt },
+    update: { subscriptionId: sub.id, availableDays: totalDays, renewsAt },
+    create: { email: parsed.data.adminEmail, subscriptionId: sub.id, availableDays: totalDays, renewsAt },
   });
 
   res.json({
     success: true,
     paymentRef,
-    message: `Subscribed to ${sub.name} — ${days} days added`,
+    message,
     admin,
     renewsAt,
+    daysAdded: newDays,
+    totalDays,
   });
 });
 
