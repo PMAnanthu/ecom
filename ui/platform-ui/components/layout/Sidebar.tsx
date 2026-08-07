@@ -20,6 +20,7 @@ const superAdminLinks = [
   { href: '/super/customers', label: 'Customer', icon: ShoppingBag },
   { href: '/super/templates', label: 'Templates', icon: LayoutTemplate },
   { href: '/super/subscriptions', label: 'Subscription', icon: CreditCard },
+  { href: '/super/settings', label: 'Settings', icon: Settings },
 ];
 
 const customizeSubLinks = [

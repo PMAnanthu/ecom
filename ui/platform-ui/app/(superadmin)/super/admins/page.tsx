@@ -12,7 +12,7 @@ import { Trash2, KeyRound, Ban, CheckCircle, Users } from 'lucide-react';
 interface Admin { id: string; email: string; createdAt: string }
 interface PlatformAdmin { id: string; email: string; status: string }
 interface AdminRow extends Admin { platformId?: string; status: string }
-type Modal = { type: 'pw'; id: string; email: string } | { type: 'pw-own' } | { type: 'create' } | null;
+type Modal = { type: 'pw'; id: string; email: string } | { type: 'create' } | null;
 
 export default function SuperAdminsPage() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
@@ -62,8 +62,7 @@ export default function SuperAdminsPage() {
     if (pwForm.newPw !== pwForm.confirm) { setError('Passwords do not match'); return; }
     setLoading(true); setError('');
     try {
-      if (modal?.type === 'pw-own') await api.post('/auth/admin-mgmt/change-password', { currentPassword: pwForm.current, newPassword: pwForm.newPw });
-      else if (modal?.type === 'pw') await api.patch(`/auth/admin-mgmt/${modal.id}/password`, { password: pwForm.newPw });
+      if (modal?.type === 'pw') await api.patch(`/auth/admin-mgmt/${modal.id}/password`, { password: pwForm.newPw });
       close(); flash('Password changed');
     } catch (err: unknown) { setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed'); }
     finally { setLoading(false); }
@@ -80,9 +79,6 @@ export default function SuperAdminsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
           {msg && <span className="text-sm text-green-600">{msg}</span>}
-          <Button variant="outline" size="sm" onClick={() => { setModal({ type: 'pw-own' }); setPwForm({ current: '', newPw: '', confirm: '' }); }}>
-            <KeyRound size={14} className="mr-1" /> My Password
-          </Button>
         </div>
         <div className="flex items-center gap-2">
           <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="h-8 text-sm w-56" />
@@ -141,14 +137,13 @@ export default function SuperAdminsPage() {
         </div>
       )}
 
-      {(modal?.type === 'pw' || modal?.type === 'pw-own') && (
+      {modal?.type === 'pw' && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-sm">
-            <CardHeader><CardTitle className="text-base">{modal.type === 'pw-own' ? 'Change My Password' : `Change Password — ${modal.email}`}</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">Change Password — {modal.email}</CardTitle></CardHeader>
             <CardContent>
               <form onSubmit={changePw} className="space-y-3">
-                {modal.type === 'pw-own' && <div className="space-y-1"><Label>Current</Label><Input type="password" value={pwForm.current} onChange={e => setPwForm({ ...pwForm, current: e.target.value })} required /></div>}
-                <div className="space-y-1"><Label>New Password</Label><Input type="password" minLength={6} value={pwForm.newPw} onChange={e => setPwForm({ ...pwForm, newPw: e.target.value })} required /></div>
+                <div className="space-y-1"><Label>New Password</Label><Input type="password" minLength={6} value={pwForm.newPw} onChange={e => setPwForm({ ...pwForm, newPw: e.target.value })} required autoFocus /></div>
                 <div className="space-y-1"><Label>Confirm</Label><Input type="password" value={pwForm.confirm} onChange={e => setPwForm({ ...pwForm, confirm: e.target.value })} required /></div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <div className="flex gap-2"><Button type="submit" disabled={loading} className="flex-1">{loading ? 'Saving…' : 'Save'}</Button><Button type="button" variant="outline" onClick={close}>Cancel</Button></div>

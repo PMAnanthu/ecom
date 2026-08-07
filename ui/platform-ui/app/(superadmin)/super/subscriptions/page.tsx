@@ -10,14 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2 } from 'lucide-react';
 
 type BillingPeriod = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
-interface Sub { id: string; name: string; maxProducts: number; price: number; currency: string; billingPeriod: BillingPeriod; features: Record<string, unknown> }
+interface Sub { id: string; name: string; price: number; currency: string; billingPeriod: BillingPeriod }
 
 const PERIOD_LABELS: Record<BillingPeriod, string> = { MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', YEARLY: 'Yearly' };
 const PERIOD_BADGE: Record<BillingPeriod, 'default' | 'secondary' | 'outline'> = { MONTHLY: 'outline', QUARTERLY: 'secondary', YEARLY: 'default' };
 
 export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<Sub[]>([]);
-  const [form, setForm] = useState({ name: '', maxProducts: 50, price: 0, currency: 'USD', billingPeriod: 'MONTHLY' as BillingPeriod });
+  const [form, setForm] = useState({ name: '', price: 0, currency: 'USD', billingPeriod: 'MONTHLY' as BillingPeriod });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [msg, setMsg] = useState('');
@@ -30,7 +30,6 @@ export default function SubscriptionsPage() {
   };
 
   useEffect(() => { load(); }, []);
-
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
 
   const create = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -39,7 +38,7 @@ export default function SubscriptionsPage() {
     setLoading(true); setError('');
     try {
       await api.post('/platform/subscriptions', form);
-      setForm({ name: '', maxProducts: 50, price: 0, currency: 'USD', billingPeriod: 'MONTHLY' });
+      setForm({ name: '', price: 0, currency: 'USD', billingPeriod: 'MONTHLY' });
       await load();
       flash('Plan created');
     } catch (err: unknown) {
@@ -49,11 +48,8 @@ export default function SubscriptionsPage() {
 
   const del = async (sub: Sub) => {
     if (!confirm(`Delete plan "${sub.name}"?`)) return;
-    try {
-      await api.delete(`/platform/subscriptions/${sub.id}`);
-      await load();
-      flash('Plan deleted');
-    } catch { setError('Failed to delete plan'); }
+    try { await api.delete(`/platform/subscriptions/${sub.id}`); await load(); flash('Plan deleted'); }
+    catch { setError('Failed to delete plan'); }
   };
 
   return (
@@ -64,8 +60,8 @@ export default function SubscriptionsPage() {
         <CardHeader><CardTitle className="text-base">New Plan</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={create} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 col-span-2">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1 col-span-3">
                 <Label>Plan Name</Label>
                 <Input placeholder="Pro" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
               </div>
@@ -86,10 +82,6 @@ export default function SubscriptionsPage() {
                   <option value="YEARLY">Yearly</option>
                 </select>
               </div>
-              <div className="space-y-1">
-                <Label>Max Products</Label>
-                <Input type="number" min={1} value={form.maxProducts} onChange={e => setForm({ ...form, maxProducts: +e.target.value })} />
-              </div>
             </div>
             {error && <p className="text-sm text-red-500">{error}</p>}
             {msg && <p className="text-sm text-green-600">{msg}</p>}
@@ -108,7 +100,6 @@ export default function SubscriptionsPage() {
                 <Badge variant={PERIOD_BADGE[s.billingPeriod]}>{PERIOD_LABELS[s.billingPeriod]}</Badge>
               </div>
               <p className="text-xs text-neutral-500">
-                {s.maxProducts} products ·{' '}
                 {s.price === 0 ? 'Free' : `${s.currency} ${s.price.toLocaleString()}`}
               </p>
             </div>

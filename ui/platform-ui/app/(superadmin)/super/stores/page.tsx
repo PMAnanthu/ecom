@@ -106,7 +106,7 @@ function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSa
               {modal.type === 'create' && (
                 <>
                   <div className="space-y-1 col-span-2">
-                    <Label>Subdomain <span className="text-neutral-400 text-xs">(unique store identifier)</span></Label>
+                    <Label>Store ID <span className="text-neutral-400 text-xs">(unique identifier used in URL)</span></Label>
                     <Input placeholder="mystore" value={form.subdomain}
                       onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} required />
                   </div>
