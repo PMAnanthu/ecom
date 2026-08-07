@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useTemplate, useCurrency } from '@/lib/template-context';
 import { useShopData } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
@@ -9,11 +10,84 @@ import { useStorefrontStore } from '@/lib/storefront-store';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { ProductCard } from '@/components/product/ProductCard';
 import { imgUrl } from '@/components/templates/TemplateShells';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 function useStorePath() {
   const pathname = usePathname();
   const match = /^\/s\/([^/]+)/.exec(pathname);
   return match ? `/s/${match[1]}` : '';
+}
+
+interface Slide { image: string; link: string }
+
+function SlidingHero({ slides, base }: Readonly<{ slides: Slide[]; base: string }>) {
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const go = (idx: number) => setCurrent((idx + slides.length) % slides.length);
+
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => setCurrent(c => (c + 1) % slides.length), 4000);
+  };
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    resetTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides.length]);
+
+  if (!slides.length) return null;
+
+  return (
+    <div className="relative w-full overflow-hidden select-none" style={{ aspectRatio: '16/6', minHeight: 220 }}>
+      {/* Slides */}
+      {slides.map((s, i) => {
+        const isActive = i === current;
+        const rawLink = s.link || '';
+        let slideHref: string | null = null;
+        if (rawLink) { slideHref = rawLink.startsWith('http') ? rawLink : `${base}${rawLink}`; }
+        return (
+          <div key={`${s.image.slice(-8)}-${i}`}
+            className={`absolute inset-0 transition-opacity duration-700 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+            <img src={imgUrl(s.image)} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
+            {slideHref && (
+              <a href={slideHref} className="absolute inset-0 bg-black/10 hover:bg-black/20 transition-colors cursor-pointer"
+                aria-label={`Go to ${slideHref}`} />
+            )}
+          </div>
+        );
+      })}
+
+      {/* Prev / Next arrows */}
+      {slides.length > 1 && (
+        <>
+          <button onClick={() => { go(current - 1); resetTimer(); }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-colors"
+            aria-label="Previous">
+            <ChevronLeft size={20} />
+          </button>
+          <button onClick={() => { go(current + 1); resetTimer(); }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center transition-colors"
+            aria-label="Next">
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
+
+      {/* Dot indicators */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+          {slides.map((s, i) => (
+            <button key={`dot-${s.image.slice(-6)}-${i}`} onClick={() => { go(i); resetTimer(); }}
+              className={`w-2 h-2 rounded-full transition-all ${i === current ? 'bg-white scale-125' : 'bg-white/50 hover:bg-white/80'}`}
+              aria-label={`Slide ${i + 1}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SidebarCategories() {
@@ -41,6 +115,11 @@ const GRADIENT_CLASSES: Record<string, string> = {
 };
 
 function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string; branding: Record<string, string>; base: string }>) {
+  // Sliding hero takes priority if configured
+  if (branding.heroType === 'sliding') {
+    const slides: Slide[] = (() => { try { return JSON.parse(branding.heroSlides as unknown as string) as Slide[]; } catch { return (branding.heroSlides as unknown as Slide[]) || []; } })();
+    if (slides.length > 0) return <SlidingHero slides={slides} base={base} />;
+  }
   const heading = branding.heroHeading || storeName;
   const subtext = branding.heroSubtext || 'Discover our collection';
   const style = branding.heroStyle || 'dark';
