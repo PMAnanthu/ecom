@@ -41,7 +41,7 @@ function SlidingHero({ slides, base }: Readonly<{ slides: Slide[]; base: string 
   if (!slides.length) return null;
 
   return (
-    <div className="relative w-full overflow-hidden select-none" style={{ aspectRatio: '16/6', minHeight: 220 }}>
+    <div className="relative w-full overflow-hidden select-none" style={{ aspectRatio: '16/5', minHeight: 160 }}>
       {/* Slides */}
       {slides.map((s, i) => {
         const isActive = i === current;
