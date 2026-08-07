@@ -117,6 +117,10 @@ app.get('/api/platform/templates', forward(PLATFORM_URL, 'platform'));
 // Subscription status — accessible by authenticated admins
 app.get('/api/platform/subscription-status', ...mw(authenticate, requireRole('ADMIN')), forward(PLATFORM_URL, 'platform'));
 
+// Subscription management — super-admin only
+app.all('/api/platform/manage', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
+app.all('/api/platform/manage/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
+
 // Platform: super-admin only (all other platform routes)
 app.all('/api/platform', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));

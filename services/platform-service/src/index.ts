@@ -3,6 +3,7 @@ import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
 import { adminRouter } from './routes/admin';
 import { subscriptionRouter } from './routes/subscription';
+import { subscriptionLifecycleRouter } from './routes/subscription-lifecycle';
 import { analyticsRouter } from './routes/analytics';
 import { templateRouter } from './routes/template';
 
@@ -46,6 +47,7 @@ app.get('/subscription-status', async (req: Request, res: Response) => {
 
 app.use('/admins', adminRouter);
 app.use('/subscriptions', subscriptionRouter);
+app.use('/manage', subscriptionLifecycleRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/templates', templateRouter);
 
