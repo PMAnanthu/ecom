@@ -5,13 +5,11 @@ import { prisma } from '../lib/prisma';
 
 export const adminMgmtRouter = Router();
 
-// Create admin user with password + optional store info (super-admin only)
+// Create admin user (super-admin only) — store must be created separately via Store page
 adminMgmtRouter.post('/', async (req: Request, res: Response) => {
   const parsed = z.object({
     email: z.string().email(),
     password: z.string().min(6),
-    storeName: z.string().min(1).optional(),
-    subdomain: z.string().min(3).regex(/^[a-z0-9-]+$/).optional(),
   }).safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
 
@@ -24,23 +22,7 @@ adminMgmtRouter.post('/', async (req: Request, res: Response) => {
     select: { id: true, email: true, role: true, createdAt: true },
   });
 
-  // If store details provided, create store via store-service URL stored in env
-  let store = null;
-  if (parsed.data.storeName && parsed.data.subdomain) {
-    try {
-      const storeServiceUrl = process.env.STORE_SERVICE_URL || 'http://store-service:3003';
-      const { signAccessToken } = await import('../lib/jwt');
-      const token = signAccessToken({ userId: user.id, email: user.email, role: 'ADMIN', storeId: null });
-      const storeRes = await fetch(`${storeServiceUrl}/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, 'x-user-id': user.id, 'x-user-role': 'ADMIN' },
-        body: JSON.stringify({ name: parsed.data.storeName, subdomain: parsed.data.subdomain }),
-      });
-      if (storeRes.ok) store = ((await storeRes.json()) as { store: unknown }).store;
-    } catch { /* store creation is best-effort */ }
-  }
-
-  res.status(201).json({ user, store });
+  res.status(201).json({ user });
 });
 
 // Create a customer account (super-admin)

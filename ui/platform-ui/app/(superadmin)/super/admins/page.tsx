@@ -18,7 +18,7 @@ export default function SuperAdminsPage() {
   const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [search, setSearch] = useState('');
   const [modal, setModal] = useState<Modal>(null);
-  const [form, setForm] = useState({ email: '', password: '', storeName: '', subdomain: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
@@ -39,8 +39,8 @@ export default function SuperAdminsPage() {
   const create = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault(); setLoading(true); setError('');
     try {
-      await api.post('/auth/admin-mgmt', { email: form.email, password: form.password, storeName: form.storeName || undefined, subdomain: form.subdomain || undefined });
-      setForm({ email: '', password: '', storeName: '', subdomain: '' }); close(); await load(); flash('Admin created');
+      await api.post('/auth/admin-mgmt', { email: form.email, password: form.password });
+      setForm({ email: '', password: '' }); close(); await load(); flash('Admin created');
     } catch (err: unknown) { setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Failed'); }
     finally { setLoading(false); }
   };
@@ -86,7 +86,7 @@ export default function SuperAdminsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} className="h-8 text-sm w-56" />
-          <Button size="sm" onClick={() => { setForm({ email: '', password: '', storeName: '', subdomain: '' }); setModal({ type: 'create' }); setError(''); }}>+ Add Admin</Button>
+          <Button size="sm" onClick={() => { setForm({ email: '', password: '' }); setModal({ type: 'create' }); setError(''); }}>+ Add Admin</Button>
         </div>
       </div>
 
@@ -130,12 +130,8 @@ export default function SuperAdminsPage() {
             <CardContent>
               <form onSubmit={create} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1"><Label>Name / Email</Label><Input type="email" placeholder="admin@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required autoFocus /></div>
+                  <div className="space-y-1"><Label>Email</Label><Input type="email" placeholder="admin@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required autoFocus /></div>
                   <div className="space-y-1"><Label>Password</Label><Input type="password" placeholder="Min 6 chars" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} /></div>
-                  <div className="space-y-1"><Label>Store Name <span className="text-neutral-400 text-xs">(opt)</span></Label><Input placeholder="My Store" value={form.storeName} onChange={e => setForm({ ...form, storeName: e.target.value })} /></div>
-                  <div className="space-y-1"><Label>Subdomain <span className="text-neutral-400 text-xs">(opt)</span></Label>
-                    <div className="flex items-center gap-1"><Input placeholder="mystore" value={form.subdomain} onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} /><span className="text-xs text-neutral-400 whitespace-nowrap">.ecom.app</span></div>
-                  </div>
                 </div>
                 {error && <p className="text-sm text-red-500">{error}</p>}
                 <div className="flex gap-2"><Button type="submit" disabled={loading} className="flex-1">{loading ? 'Creating…' : 'Create Admin'}</Button><Button type="button" variant="outline" onClick={close}>Cancel</Button></div>
