@@ -13,6 +13,7 @@ resources:
   - catalog-service/deployment.yaml
   - order-service/deployment.yaml
   - storefront-service/deployment.yaml
+  - notification-service/deployment.yaml
   - api-gateway/deployment.yaml
   - platform-ui/deployment.yaml
   - storefront/deployment.yaml

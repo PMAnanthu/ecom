@@ -122,7 +122,7 @@ app.get('/api/platform/subscription-status', ...mw(authenticate, requireRole('AD
 app.post('/api/platform/manage/buy', ...mw(authenticate, requireRole('ADMIN')), forward(PLATFORM_URL, 'platform'));
 
 // Plans listing for admins (read-only)
-app.get('/api/platform/subscriptions', ...mw(authenticate, requireRole('ADMIN')), forward(PLATFORM_URL, 'platform'));
+app.get('/api/platform/subscriptions', ...mw(authenticate, requireRole('ADMIN', 'SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 
 // Subscription management — super-admin only
 app.all('/api/platform/manage', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
