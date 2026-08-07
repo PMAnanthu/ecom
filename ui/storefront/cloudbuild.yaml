@@ -9,7 +9,7 @@ steps:
       - '--build-arg'
       - 'CATALOG_SERVICE_URL=https://ecom-catalog-service-496160804659.us-east1.run.app'
       - '.'
-    dir: 'storefront'
+    dir: 'ui/storefront'
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-storefront:latest']
 images:

@@ -9,7 +9,7 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_STOREFRONT_URL=https://ecom-storefront-m6jmogmpra-ue.a.run.app'
       - '.'
-    dir: 'platform-ui'
+    dir: 'ui/platform-ui'
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-platform-ui:latest']
 images:

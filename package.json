@@ -5,13 +5,13 @@
   "private": true,
   "workspaces": [
     "services/*",
-    "platform-ui",
-    "storefront"
+    "ui/platform-ui",
+    "ui/storefront"
   ],
   "scripts": {
     "start": "./start.sh",
-    "dev:ui": "cd platform-ui && npm run dev -- --port 3100",
-    "dev:storefront": "cd storefront && npm run dev -- --port 3200 --webpack",
+    "dev:ui": "cd ui/platform-ui && npm run dev -- --port 3100",
+    "dev:storefront": "cd ui/storefront && npm run dev -- --port 3200 --webpack",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build"

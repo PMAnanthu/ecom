@@ -18,8 +18,9 @@ ecom/
 │   ├── catalog-service/ # Port 3004 — products, categories, inventory
 │   ├── order-service/  # Port 3005 — cart (Redis), checkout, order status
 │   └── storefront-service/ # Port 3006 — public: resolve domain → store config
-├── platform-ui/        # Next.js 14 — Super Admin + Admin dashboard
-├── storefront/         # Next.js 14 PWA — customer-facing, multi-tenant by Host header
+├── ui/
+│   ├── platform-ui/    # Next.js 14 — Super Admin + Admin dashboard
+│   └── storefront/     # Next.js 14 PWA — customer-facing, multi-tenant by Host header
 ├── k8s/                # Kubernetes manifests (namespace ecom, Traefik ingress)
 ├── docker-compose.yml  # Local dev only
 └── tsconfig.base.json  # Shared TS config extended by each service
