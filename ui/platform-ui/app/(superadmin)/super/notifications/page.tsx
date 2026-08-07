@@ -2,36 +2,26 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { StoreSelector } from '@/components/notifications/StoreSelector';
-import { EmailConfigForm, WhatsAppConfigForm } from '@/components/notifications/NotificationConfigForms';
-
-interface Store { id: string; name: string }
+import { EmailConfigForm } from '@/components/notifications/EmailConfigForm';
+import { WhatsAppConfigForm } from '@/components/notifications/WhatsAppConfigForm';
 
 interface NotifConfig {
   smtpHost?: string; smtpPort?: string; smtpUser?: string;
-  smtpFrom?: string; emailEnabled?: boolean;
-  waProvider?: 'TWILIO' | 'META'; waPhoneId?: string; waEnabled?: boolean;
+  smtpPassword?: string; smtpFrom?: string; emailEnabled?: boolean;
+  waProvider?: 'TWILIO' | 'META'; waApiKey?: string;
+  waPhoneId?: string; waEnabled?: boolean;
 }
 
 export default function NotificationsConfigPage() {
-  const [stores, setStores] = useState<Store[]>([]);
-  const [selectedStoreId, setSelectedStoreId] = useState('');
   const [config, setConfig] = useState<NotifConfig | null>(null);
-  const [configuredIds, setConfiguredIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    api.get('/store/all').then(r => setStores(r.data.stores ?? [])).catch(() => {});
-  }, []);
-
-  const loadConfig = useCallback(async (storeId: string) => {
-    setLoading(true);
-    setError('');
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
     try {
-      const r = await api.get(`/notifications/config/${storeId}`);
+      const r = await api.get('/notifications/config');
       setConfig(r.data.config ?? {});
-      if (r.data.config) setConfiguredIds(prev => new Set([...prev, storeId]));
     } catch {
       setError('Failed to load config');
     } finally {
@@ -39,16 +29,11 @@ export default function NotificationsConfigPage() {
     }
   }, []);
 
-  const handleStoreChange = (id: string) => {
-    setSelectedStoreId(id);
-    setConfig(null);
-    loadConfig(id);
-  };
+  useEffect(() => { load(); }, [load]);
 
-  const saveConfig = async (patch: Record<string, unknown>) => {
-    await api.put(`/notifications/config/${selectedStoreId}`, patch);
-    setConfiguredIds(prev => new Set([...prev, selectedStoreId]));
-    await loadConfig(selectedStoreId);
+  const save = async (patch: Record<string, unknown>) => {
+    await api.put('/notifications/config', patch);
+    await load();
   };
 
   return (
@@ -56,52 +41,36 @@ export default function NotificationsConfigPage() {
       <div>
         <h1 className="text-xl font-bold">Notification Settings</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Configure email and WhatsApp notifications per store.
+          Platform-wide email and WhatsApp configuration for all transaction notifications.
         </p>
       </div>
 
-      <StoreSelector
-        stores={stores}
-        selectedId={selectedStoreId}
-        onChange={handleStoreChange}
-        configuredIds={configuredIds}
-      />
-
+      {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
-
-      {!loading && selectedStoreId && config !== null && (
-        <div className="space-y-4">
+      {!loading && config !== null && (
+        <>
           <EmailConfigForm
-            storeId={selectedStoreId}
             initial={config}
-            onSave={data => saveConfig({
+            onSave={data => save({
               smtpHost: data.smtpHost,
               smtpPort: Number(data.smtpPort),
               smtpUser: data.smtpUser,
-              smtpPassword: data.smtpPassword || undefined,
+              smtpPassword: data.smtpPassword,
               smtpFrom: data.smtpFrom,
               emailEnabled: data.emailEnabled,
             })}
           />
           <WhatsAppConfigForm
-            storeId={selectedStoreId}
             initial={config}
-            onSave={data => saveConfig({
+            onSave={data => save({
               waProvider: data.waProvider,
-              waApiKey: data.waApiKey || undefined,
+              waApiKey: data.waApiKey,
               waPhoneId: data.waPhoneId,
               waEnabled: data.waEnabled,
             })}
           />
-        </div>
-      )}
-
-      {!selectedStoreId && !loading && (
-        <p className="text-sm text-muted-foreground text-center py-8">
-          Select a store above to configure its notifications.
-        </p>
+        </>
       )}
     </div>
   );

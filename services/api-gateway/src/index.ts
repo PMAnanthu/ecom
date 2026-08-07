@@ -208,9 +208,8 @@ app.all('/api/addresses/*', ...mw(authenticate), forward(AUTH_URL, 'addresses'))
 app.all('/api/orders', ...mw(authenticate), forward(ORDER_URL, 'orders'));
 app.all('/api/orders/*', ...mw(authenticate), forward(ORDER_URL, 'orders'));
 
-// Notifications: config + logs — super-admin only; /notify/send — internal (service-to-service)
+// Notifications: global config — super-admin only; /notify/send — internal
 app.all('/api/notifications/config', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
-app.all('/api/notifications/config/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
 app.get('/api/notifications/logs', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
 app.all('/api/notifications/send', ...mw(authenticate), forward(NOTIFICATION_URL, 'notifications'));
 

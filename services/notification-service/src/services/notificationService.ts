@@ -18,7 +18,7 @@ type OrderPayload = {
 };
 
 export async function notifyOrderEvent(event: NotifEvent, payload: OrderPayload): Promise<void> {
-  const config = await prisma.notificationConfig.findUnique({ where: { storeId: payload.storeId } });
+  const config = await prisma.notificationConfig.findUnique({ where: { id: 'global' } });
   if (!config) return;
 
   const subject = buildSubject(event, payload);

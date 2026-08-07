@@ -29,11 +29,32 @@ function SidebarCategories() {
   );
 }
 
+const GRADIENT_CLASSES: Record<string, string> = {
+  'indigo-purple': 'from-indigo-600 to-purple-700',
+  'rose-orange':   'from-rose-500 to-orange-500',
+  'teal-cyan':     'from-teal-500 to-cyan-400',
+  'amber-red':     'from-amber-500 to-red-500',
+  'green-blue':    'from-green-500 to-blue-600',
+  'pink-violet':   'from-pink-500 to-violet-600',
+  'slate-gray':    'from-slate-700 to-gray-900',
+  'sky-indigo':    'from-sky-400 to-indigo-600',
+};
+
 function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string; branding: Record<string, string>; base: string }>) {
   const heading = branding.heroHeading || storeName;
   const subtext = branding.heroSubtext || 'Discover our collection';
   const style = branding.heroStyle || 'dark';
   const bgImage = branding.heroBgImage || '';
+  const gradientKey = branding.heroGradient || 'indigo-purple';
+  const gradientClass = GRADIENT_CLASSES[gradientKey] || GRADIENT_CLASSES['indigo-purple'];
+
+  // Theme colors
+  const darkBg = branding.darkBg || '#0a0a0a';
+  const darkText = branding.darkText || '#fafafa';
+  const darkAccent = branding.darkAccent || '#6366f1';
+  const lightBg = branding.lightBg || branding.themeBg || '#ffffff';
+  const lightText = branding.lightText || branding.themeText || '#171717';
+  const lightAccent = branding.lightAccent || branding.themeAccent || '#000000';
 
   if (style === 'image' && bgImage) {
     return (
@@ -49,28 +70,28 @@ function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string
   }
   if (style === 'gradient') {
     return (
-      <div className="bg-gradient-to-br from-indigo-600 to-purple-700 text-white py-20 text-center px-4">
+      <div className={`bg-gradient-to-br ${gradientClass} text-white py-20 text-center px-4`}>
         <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
-        <p className="text-indigo-200 mb-8">{subtext}</p>
-        <Link href={`${base}/products`} className="bg-white text-indigo-700 font-semibold px-8 py-3 rounded-full hover:bg-indigo-50">Shop Now</Link>
+        <p className="text-white/80 mb-8">{subtext}</p>
+        <Link href={`${base}/products`} className="bg-white/20 hover:bg-white/30 text-white border border-white/40 font-semibold px-8 py-3 rounded-full backdrop-blur-sm">Shop Now</Link>
       </div>
     );
   }
   if (style === 'light') {
     return (
-      <div className="bg-neutral-50 py-16 text-center px-4 border-b">
-        <h1 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">{heading}</h1>
-        <p className="text-neutral-500 mb-8">{subtext}</p>
-        <Link href={`${base}/products`} className="bg-neutral-900 text-white font-semibold px-8 py-3 rounded-full hover:bg-neutral-700">Shop Now</Link>
+      <div className="py-16 text-center px-4 border-b" style={{ backgroundColor: lightBg, color: lightText }}>
+        <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
+        <p className="mb-8 opacity-60">{subtext}</p>
+        <Link href={`${base}/products`} className="font-semibold px-8 py-3 rounded-full border-2 hover:opacity-80" style={{ borderColor: lightAccent, color: lightAccent }}>Shop Now</Link>
       </div>
     );
   }
   // dark (default)
   return (
-    <div className="bg-neutral-900 text-white py-20 text-center px-4">
+    <div className="py-20 text-center px-4" style={{ backgroundColor: darkBg, color: darkText }}>
       <h1 className="text-4xl sm:text-5xl font-bold mb-4">{heading}</h1>
-      <p className="text-neutral-400 mb-8">{subtext}</p>
-      <Link href={`${base}/products`} className="bg-white text-black font-semibold px-8 py-3 rounded-full hover:bg-neutral-100">Shop Now</Link>
+      <p className="mb-8 opacity-60">{subtext}</p>
+      <Link href={`${base}/products`} className="font-semibold px-8 py-3 rounded-full border-2 hover:opacity-80" style={{ borderColor: darkAccent, color: darkAccent }}>Shop Now</Link>
     </div>
   );
 }

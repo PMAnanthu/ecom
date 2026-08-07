@@ -12,10 +12,21 @@ import { Trash2, ImagePlus } from 'lucide-react';
 const STORE_SERVICE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace('/api', '');
 
 const HEADING_STYLES = [
-  { value: 'dark', label: 'Dark (black bg, white text)' },
-  { value: 'light', label: 'Light (white bg, dark text)' },
-  { value: 'gradient', label: 'Gradient (indigo to purple)' },
-  { value: 'image', label: 'Full Background Image' },
+  { value: 'dark', label: '🌙 Dark Theme' },
+  { value: 'light', label: '☀️ Light Theme' },
+  { value: 'gradient', label: '🌈 Gradient' },
+  { value: 'image', label: '🖼️ Full Photo' },
+];
+
+const GRADIENT_OPTIONS = [
+  { value: 'indigo-purple', label: 'Indigo → Purple', class: 'from-indigo-600 to-purple-700' },
+  { value: 'rose-orange', label: 'Rose → Orange', class: 'from-rose-500 to-orange-500' },
+  { value: 'teal-cyan', label: 'Teal → Cyan', class: 'from-teal-500 to-cyan-400' },
+  { value: 'amber-red', label: 'Amber → Red', class: 'from-amber-500 to-red-500' },
+  { value: 'green-blue', label: 'Green → Blue', class: 'from-green-500 to-blue-600' },
+  { value: 'pink-violet', label: 'Pink → Violet', class: 'from-pink-500 to-violet-600' },
+  { value: 'slate-gray', label: 'Slate → Gray', class: 'from-slate-700 to-gray-900' },
+  { value: 'sky-indigo', label: 'Sky → Indigo', class: 'from-sky-400 to-indigo-600' },
 ];
 
 interface Slide { image: string; link: string }
@@ -25,6 +36,7 @@ interface HomeConfig {
   heroHeading: string;
   heroSubtext: string;
   heroStyle: string;
+  heroGradient: string;
   heroBgImage: string;
   heroSlides: Slide[];
 }
@@ -34,6 +46,7 @@ const defaultConfig: HomeConfig = {
   heroHeading: '',
   heroSubtext: '',
   heroStyle: 'dark',
+  heroGradient: 'indigo-purple',
   heroBgImage: '',
   heroSlides: [],
 };
@@ -57,6 +70,7 @@ export default function CustomizePage() {
         heroHeading: b.heroHeading || '',
         heroSubtext: b.heroSubtext || '',
         heroStyle: b.heroStyle || 'dark',
+        heroGradient: b.heroGradient || 'indigo-purple',
         heroBgImage: b.heroBgImage || '',
         heroSlides: b.heroSlides || [],
       };
@@ -155,12 +169,30 @@ export default function CustomizePage() {
                 onChange={e => setConfig(c => ({ ...c, heroSubtext: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label>Background Style</Label>
+              <Label>Banner Style</Label>
               <Select value={config.heroStyle} onValueChange={(v) => v && setConfig(c => ({ ...c, heroStyle: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{HEADING_STYLES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
+              {config.heroStyle === 'dark' && <p className="text-xs text-neutral-400 mt-1">Uses your dark theme background + text colors.</p>}
+              {config.heroStyle === 'light' && <p className="text-xs text-neutral-400 mt-1">Uses your light theme background + text colors.</p>}
             </div>
+
+            {/* Gradient picker */}
+            {config.heroStyle === 'gradient' && (
+              <div className="space-y-2">
+                <Label>Gradient Style</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {GRADIENT_OPTIONS.map(g => (
+                    <button key={g.value} type="button"
+                      onClick={() => setConfig(c => ({ ...c, heroGradient: g.value }))}
+                      className={`h-12 rounded-lg bg-gradient-to-br ${g.class} transition-all ${config.heroGradient === g.value ? 'ring-2 ring-black ring-offset-1' : 'opacity-70 hover:opacity-100'}`}
+                      title={g.label} />
+                  ))}
+                </div>
+                <p className="text-xs text-neutral-400">{GRADIENT_OPTIONS.find(g => g.value === config.heroGradient)?.label || 'Select a gradient'}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Background Image {config.heroStyle === 'image' ? '(required)' : '(optional)'}</Label>
               {bgPreview && <img src={bgPreview} alt="Background" className="w-full h-28 object-cover rounded-lg border" />}
