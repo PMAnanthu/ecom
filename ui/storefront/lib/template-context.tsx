@@ -39,6 +39,11 @@ function resolveStoreDomain(storeSlug?: string): string | null {
   return host;
 }
 
+function ctxFromStore(s: { template: string; branding: Record<string, string> }): StoreContext {
+  const currency = s.branding?.currency || 'USD';
+  return { template: s.template || 'default', currency, currencySymbol: CURRENCY_SYMBOLS[currency] || currency };
+}
+
 interface TemplateProviderProps { children: ReactNode; storeSlug?: string }
 
 export function TemplateProvider({ children, storeSlug }: Readonly<TemplateProviderProps>) {
@@ -50,35 +55,36 @@ export function TemplateProvider({ children, storeSlug }: Readonly<TemplateProvi
   useEffect(() => {
     const domain = resolveStoreDomain(storeSlug);
 
-    if (!domain) {
-      setNotFound(true);
+    if (!domain) { setNotFound(true); setReady(true); return; }
+
+    const requestedSubdomain = domain.replace(/\.ecom\.app$/, '');
+
+    // Cache-first: if we have a matching cached store, render immediately
+    if (store?.subdomain === requestedSubdomain) {
+      setCtx(ctxFromStore(store as { template: string; branding: Record<string, string> }));
       setReady(true);
+      // Background refresh — updates branding/template without blocking render
+      api.get(`/storefront/resolve?domain=${domain}`)
+        .then((r) => { setStore(r.data.store); setCtx(ctxFromStore(r.data.store)); })
+        .catch(() => {});
       return;
     }
 
-    const requestedSubdomain = domain.replace(/\.ecom\.app$/, '');
+    // No cache match — blocking fetch
     if (store?.subdomain && store.subdomain !== requestedSubdomain) {
       setStore(null as never);
     }
 
     api.get(`/storefront/resolve?domain=${domain}`)
       .then((r) => {
-        const s = r.data.store;
-        setStore(s);
-        const currency = (s.branding as Record<string, string>)?.currency || 'USD';
-        setCtx({
-          template: s.template || 'default',
-          currency,
-          currencySymbol: CURRENCY_SYMBOLS[currency] || currency,
-        });
+        setStore(r.data.store);
+        setCtx(ctxFromStore(r.data.store));
       })
-      .catch(() => {
-        setNotFound(true);
-      })
+      .catch(() => setNotFound(true))
       .finally(() => setReady(true));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeSlug]);
 
-  // Show minimal skeleton while loading instead of blank screen
   if (!ready) return (
     <div className="min-h-screen bg-neutral-50 animate-pulse">
       <div className="h-14 bg-white border-b" />
