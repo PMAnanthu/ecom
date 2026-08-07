@@ -9,37 +9,36 @@ datasource db {
   schemas  = ["notif_svc"]
 }
 
+// Single global config for the whole platform (only one row, id = "global")
 model NotificationConfig {
-  id        String   @id @default(uuid())
-  storeId   String   @unique
+  id           String      @id @default("global")
   // Email (SMTP)
   smtpHost     String?
   smtpPort     Int?
   smtpUser     String?
   smtpPassword String?
   smtpFrom     String?
-  emailEnabled Boolean @default(false)
-  // WhatsApp (Twilio or Meta Cloud API)
+  emailEnabled Boolean     @default(false)
+  // WhatsApp
   waProvider   WaProvider?
   waApiKey     String?
   waPhoneId    String?
-  waEnabled    Boolean @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  waEnabled    Boolean     @default(false)
+  updatedAt    DateTime    @updatedAt
 
   @@schema("notif_svc")
 }
 
 model NotificationLog {
-  id        String           @id @default(uuid())
-  storeId   String
+  id        String       @id @default(uuid())
+  storeId   String?
   channel   NotifChannel
   event     String
   recipient String
-  status    NotifStatus      @default(PENDING)
+  status    NotifStatus  @default(PENDING)
   error     String?
   sentAt    DateTime?
-  createdAt DateTime         @default(now())
+  createdAt DateTime     @default(now())
 
   @@schema("notif_svc")
 }

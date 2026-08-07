@@ -17,27 +17,48 @@ const configSchema = z.object({
   waEnabled: z.boolean().optional(),
 });
 
-// GET /config/:storeId — super-admin fetches any store's config
-configRouter.get('/:storeId', async (req: Request, res: Response) => {
+// GET /config — fetch global config (password masked)
+configRouter.get('/', async (req: Request, res: Response) => {
   const role = req.headers['x-user-role'] as string;
   if (role !== 'SUPERADMIN') { res.status(403).json({ error: 'Forbidden' }); return; }
 
-  const config = await prisma.notificationConfig.findUnique({ where: { storeId: req.params.storeId } });
-  res.json({ config: config ?? null });
+  const config = await prisma.notificationConfig.findUnique({ where: { id: 'global' } });
+  if (!config) { res.json({ config: null }); return; }
+
+  // Mask secrets in response
+  res.json({
+    config: {
+      ...config,
+      smtpPassword: config.smtpPassword ? '••••••••' : '',
+      waApiKey: config.waApiKey ? '••••••••' : '',
+    },
+  });
 });
 
-// PUT /config/:storeId — upsert config
-configRouter.put('/:storeId', async (req: Request, res: Response) => {
+// PUT /config — upsert global config
+configRouter.put('/', async (req: Request, res: Response) => {
   const role = req.headers['x-user-role'] as string;
   if (role !== 'SUPERADMIN') { res.status(403).json({ error: 'Forbidden' }); return; }
 
   const parsed = configSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
 
+  // Don't overwrite secrets if placeholder sent
+  const data = { ...parsed.data };
+  if (data.smtpPassword === '••••••••') delete data.smtpPassword;
+  if (data.waApiKey === '••••••••') delete data.waApiKey;
+
   const config = await prisma.notificationConfig.upsert({
-    where: { storeId: req.params.storeId },
-    update: parsed.data,
-    create: { storeId: req.params.storeId, ...parsed.data },
+    where: { id: 'global' },
+    update: data,
+    create: { id: 'global', ...data },
   });
-  res.json({ config });
+
+  res.json({
+    config: {
+      ...config,
+      smtpPassword: config.smtpPassword ? '••••••••' : '',
+      waApiKey: config.waApiKey ? '••••••••' : '',
+    },
+  });
 });

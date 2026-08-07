@@ -30,6 +30,13 @@ export function ThemeInjector() {
   const mode = useThemeStore(s => s.mode);
   const b = (store?.branding || {}) as Record<string, string>;
 
+  // Update page title dynamically with store name
+  useEffect(() => {
+    if (store?.name) {
+      document.title = store.name;
+    }
+  }, [store?.name]);
+
   useEffect(() => {
     const root = document.documentElement;
 

@@ -2,15 +2,15 @@ import nodemailer from 'nodemailer';
 import { prisma } from './prisma';
 
 export async function sendEmail(opts: {
-  storeId: string;
+  storeId?: string;
   to: string;
   subject: string;
   html: string;
   event: string;
 }): Promise<void> {
-  const config = await prisma.notificationConfig.findUnique({ where: { storeId: opts.storeId } });
+  const config = await prisma.notificationConfig.findUnique({ where: { id: 'global' } });
   if (!config?.emailEnabled || !config.smtpHost) {
-    throw new Error('Email not configured for this store');
+    throw new Error('Email not configured');
   }
 
   const transporter = nodemailer.createTransport({

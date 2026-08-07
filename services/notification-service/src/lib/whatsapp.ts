@@ -1,14 +1,14 @@
 import { prisma } from './prisma';
 
 export async function sendWhatsApp(opts: {
-  storeId: string;
+  storeId?: string;
   to: string;
   message: string;
   event: string;
 }): Promise<void> {
-  const config = await prisma.notificationConfig.findUnique({ where: { storeId: opts.storeId } });
+  const config = await prisma.notificationConfig.findUnique({ where: { id: 'global' } });
   if (!config?.waEnabled || !config.waApiKey || !config.waPhoneId) {
-    throw new Error('WhatsApp not configured for this store');
+    throw new Error('WhatsApp not configured');
   }
 
   if (config.waProvider === 'META') {
@@ -50,10 +50,11 @@ async function sendViaTwilio(opts: { apiKey: string; from: string; to: string; m
     To: `whatsapp:${opts.to}`,
     Body: opts.message,
   });
+  const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
   const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+      Authorization: `Basic ${credentials}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: body.toString(),
