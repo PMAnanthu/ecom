@@ -222,7 +222,7 @@ export default function AdminsPage() {
                       </td>
                       <td className="px-4 py-3"><Badge variant={suspended ? 'secondary' : 'default'}>{a.status}</Badge></td>
                       <td className="px-4 py-3">
-                        <Select onValueChange={v => assignSub(a, v)}>
+                        <Select onValueChange={(v) => { if (v) assignSub(a, v); }}>
                           <SelectTrigger className="h-7 text-xs w-36"><SelectValue placeholder={a.subscriptionName || 'No plan'} /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="__none__">No plan</SelectItem>
