@@ -15,7 +15,18 @@ interface Sub { id: string; name: string; price: number; currency: string; billi
 const PERIOD_LABELS: Record<BillingPeriod, string> = { MONTHLY: 'Monthly', QUARTERLY: 'Quarterly', YEARLY: 'Yearly', UNLIMITED: 'Unlimited' };
 const PERIOD_BADGE: Record<BillingPeriod, 'default' | 'secondary' | 'outline'> = { MONTHLY: 'outline', QUARTERLY: 'secondary', YEARLY: 'default', UNLIMITED: 'default' };
 
-const emptyForm = { name: '', price: 0, currency: 'USD', billingPeriod: 'MONTHLY' as BillingPeriod };
+const emptyForm = { name: '', price: 0, currency: 'INR', billingPeriod: 'MONTHLY' as BillingPeriod };
+
+const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'AED', 'SGD', 'AUD', 'CAD'];
+
+function CurrencySelect({ value, onChange, className }: Readonly<{ value: string; onChange: (v: string) => void; className?: string }>) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className={`rounded-md border border-neutral-200 px-2 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-black ${className ?? 'h-9 w-full'}`}>
+      {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+    </select>
+  );
+}
 
 function BillingSelect({ value, onChange }: Readonly<{ value: BillingPeriod; onChange: (v: BillingPeriod) => void }>) {
   return (
@@ -99,7 +110,7 @@ export default function SubscriptionsPage() {
               </div>
               <div className="space-y-1">
                 <Label>Currency</Label>
-                <Input placeholder="USD" value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value.toUpperCase().slice(0, 3) })} maxLength={3} />
+                <CurrencySelect value={form.currency} onChange={v => setForm({ ...form, currency: v })} />
               </div>
               <div className="space-y-1">
                 <Label>Billing Period</Label>
@@ -144,7 +155,7 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-2">
                     {isEditing
-                      ? <Input value={editForm.currency} onChange={e => setEditForm({ ...editForm, currency: e.target.value.toUpperCase().slice(0, 3) })} maxLength={3} className="h-8 w-20 text-sm" />
+                      ? <CurrencySelect value={editForm.currency} onChange={v => setEditForm({ ...editForm, currency: v })} className="h-8 w-24" />
                       : <span className="text-xs text-neutral-500">{s.currency}</span>}
                   </td>
                   <td className="px-4 py-2">
