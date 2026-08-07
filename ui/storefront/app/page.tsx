@@ -8,7 +8,6 @@ import { useShopData } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
-import { ProductCard } from '@/components/product/ProductCard';
 import { imgUrl } from '@/components/templates/TemplateShells';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -177,50 +176,70 @@ function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string
 
 // ─── Section display components ────────────────────────────────────────────
 
-function CategorySection({ categories, style, base, accent }: Readonly<{
+function CategorySection({ categories, style, base, accent, products }: Readonly<{
   categories: { id: string; name: string }[];
   style: string; base: string; accent: string;
+  products: SectionProduct[];
 }>) {
   if (!categories.length) return null;
+
+  const categoryImage = (catId: string): string | null =>
+    products.find(p => p.category && (p.category as unknown as { id: string }).id === catId && p.images?.[0])?.images?.[0] ?? null;
+
   if (style === 'circle') return (
     <div className="flex flex-wrap gap-6 justify-center">
-      {categories.map(c => (
-        <Link key={c.id} href={`${base}/products`} className="flex flex-col items-center gap-2 group">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-            style={{ backgroundColor: accent || '#6366f1' }}>
-            {c.name.charAt(0).toUpperCase()}
-          </div>
-          <span className="text-xs font-medium text-center max-w-[80px] truncate">{c.name}</span>
-        </Link>
-      ))}
+      {categories.map(c => {
+        const img = categoryImage(c.id);
+        return (
+          <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
+            <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0"
+              style={{ backgroundColor: accent || '#6366f1' }}>
+              {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                : c.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium text-center max-w-[80px] truncate">{c.name}</span>
+          </Link>
+        );
+      })}
     </div>
   );
   if (style === 'rectangle') return (
     <div className="flex flex-wrap gap-4 justify-center">
-      {categories.map(c => (
-        <Link key={c.id} href={`${base}/products`} className="flex flex-col items-center gap-2 group">
-          <div className="w-24 h-32 rounded-xl flex items-center justify-center text-2xl font-bold text-white"
-            style={{ backgroundColor: accent || '#6366f1' }}>
-            {c.name.charAt(0).toUpperCase()}
-          </div>
-          <span className="text-xs font-medium text-center max-w-[96px] truncate">{c.name}</span>
-        </Link>
-      ))}
+      {categories.map(c => {
+        const img = categoryImage(c.id);
+        return (
+          <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
+            <div className="w-24 h-32 rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0"
+              style={{ backgroundColor: accent || '#6366f1' }}>
+              {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                : c.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-xs font-medium text-center max-w-[96px] truncate">{c.name}</span>
+          </Link>
+        );
+      })}
     </div>
   );
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      {categories.map(c => (
-        <Link key={c.id} href={`${base}/products`}
-          className="rounded-2xl p-6 flex flex-col items-center gap-3 border hover:shadow-md transition-shadow"
-          style={{ backgroundColor: accent ? `${accent}20` : '#f5f5f5' }}>
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold text-white"
-            style={{ backgroundColor: accent || '#6366f1' }}>
-            {c.name.charAt(0).toUpperCase()}
-          </div>
-          <span className="text-sm font-semibold text-center">{c.name}</span>
-        </Link>
-      ))}
+      {categories.map(c => {
+        const img = categoryImage(c.id);
+        return (
+          <Link key={c.id} href={`${base}/products?category=${c.id}`}
+            className="rounded-2xl overflow-hidden border hover:shadow-md transition-shadow flex flex-col"
+            style={{ backgroundColor: accent ? `${accent}20` : '#f5f5f5' }}>
+            <div className="aspect-[4/3] bg-neutral-100 overflow-hidden flex items-center justify-center text-3xl font-bold text-white"
+              style={{ backgroundColor: img ? undefined : (accent || '#6366f1') }}>
+              {img
+                ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover hover:scale-105 transition-transform" />
+                : c.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="p-3 flex items-center justify-center">
+              <span className="text-sm font-semibold text-center">{c.name}</span>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }
@@ -319,7 +338,7 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
       {isTruthy(branding.showCategories) && allCategories.length > 0 && (
         <section className="px-4 py-8 max-w-7xl mx-auto">
           <h2 className="text-xl font-bold mb-5">Shop by Category</h2>
-          <CategorySection categories={allCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} />
+          <CategorySection categories={allCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} />
         </section>
       )}
       {isTruthy(branding.showNewArrivals) && (
@@ -341,7 +360,7 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
 export default function HomePage() {
   const template = useTemplate();
   const { store } = useStorefrontStore();
-  const { products, categories, category, setCategory } = useShopData();
+  const { products, categories } = useShopData();
   const { addItem } = useCartStore();
   const { symbol } = useCurrency();
   const base = useStorePath();
@@ -361,12 +380,6 @@ export default function HomePage() {
 
   const b = branding as Record<string, string>;
 
-  const grid = (cols: string) => (
-    <div className={`grid ${cols} gap-4`}>
-      {products.slice(0, 8).map((p) => <ProductCard key={p.id} product={p} />)}
-    </div>
-  );
-
   if (template === 'sidebar') {
     return (
       <TemplateWrapper sidebar={<SidebarCategories />}>
@@ -381,11 +394,6 @@ export default function HomePage() {
           </div>
         </div>
         {homeSections}
-        <div className="flex items-center justify-between mb-4 mt-6">
-          <h2 className="font-bold text-lg">Products</h2>
-          <Link href={`${base}/products`} className="text-xs text-neutral-400 hover:text-black underline">View all</Link>
-        </div>
-        {grid('grid-cols-2 lg:grid-cols-3')}
       </TemplateWrapper>
     );
   }
@@ -395,30 +403,6 @@ export default function HomePage() {
       <TemplateWrapper>
         <HeroSection storeName={storeName} branding={{ ...b, heroStyle: b.heroStyle || 'gradient' }} base={base} />
         {homeSections}
-        <div className="max-w-6xl mx-auto px-4 py-10">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.slice(0, 6).map((p) => (
-              <div key={p.id} className="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
-                <Link href={`${base}/products/${p.id}`} className="block aspect-[4/3] bg-neutral-100 overflow-hidden">
-                  {p.images?.[0]
-                    ? <img src={imgUrl(p.images[0])} alt={p.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                    : <div className="w-full h-full flex items-center justify-center text-5xl">📦</div>}
-                </Link>
-                <div className="p-4 flex flex-col gap-2 flex-1">
-                  {p.category && <span className="text-xs text-indigo-600 font-medium">{p.category.name}</span>}
-                  <Link href={`${base}/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></Link>
-                  <div className="flex items-center justify-between mt-auto pt-2 border-t">
-                    <span className="font-bold text-lg">{symbol}{p.price.toFixed(2)}</span>
-                    {p.stock > 0 && (
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 }); }}
-                        className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </TemplateWrapper>
     );
   }
@@ -428,21 +412,6 @@ export default function HomePage() {
     <TemplateWrapper>
       <HeroSection storeName={storeName} branding={b} base={base} />
       {homeSections}
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-xl font-bold">Products</h2>
-          <div className="flex gap-2 flex-wrap">
-            <Link href={`${base}/products`} className={`text-sm px-3 py-1 rounded-full ${!category ? 'bg-black text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}>All</Link>
-            {categories.map((c) => (
-              <button key={c.id} onClick={() => setCategory(c.id)} className={`text-sm px-3 py-1 rounded-full ${category === c.id ? 'bg-black text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}>{c.name}</button>
-            ))}
-          </div>
-        </div>
-        {grid('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4')}
-        <div className="mt-8 text-center">
-          <Link href={`${base}/products`} className="text-sm underline text-neutral-500 hover:text-black">View all products →</Link>
-        </div>
-      </div>
     </TemplateWrapper>
   );
 }

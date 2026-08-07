@@ -71,7 +71,6 @@ const defaultConfig: HomeConfig = {
 };
 
 interface Product { id: string; name: string; images: string[] }
-interface Category { id: string; name: string }
 
 const STYLE_OPTIONS: { value: DisplayStyle; label: string }[] = [
   { value: 'cards', label: 'Cards (album frame)' },
@@ -88,15 +87,13 @@ export default function CustomizePage() {
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [slideFiles, setSlideFiles] = useState<(File | null)[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const bgRef = useRef<HTMLInputElement>(null);
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadData = useCallback(async () => {
-    const [storeRes, productsRes, catsRes] = await Promise.all([
+    const [storeRes, productsRes] = await Promise.all([
       api.get('/store'),
       api.get('/catalog/products?limit=100'),
-      api.get('/catalog/categories'),
     ]);
     const b = storeRes.data.store?.branding || {};
     const loaded: HomeConfig = {
@@ -120,7 +117,6 @@ export default function CustomizePage() {
     setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
     if (b.heroBgImage) setBgPreview(b.heroBgImage.startsWith('http') ? b.heroBgImage : `${STORE_SERVICE}${b.heroBgImage}`);
     setProducts(productsRes.data.products || []);
-    setCategories(catsRes.data.categories || []);
   }, []);
 
   useEffect(() => { loadData().finally(() => setLoading(false)); }, [loadData]);
@@ -133,17 +129,6 @@ export default function CustomizePage() {
       method: 'POST', headers: { Authorization: `Bearer ${token ?? ''}` }, body: fd,
     });
     return (await res.json()).url as string;
-  };
-
-  const saveSections = async () => {
-    setSaving(true);
-    try {
-      const storeRes = await api.get('/store');
-      const existing = storeRes.data.store?.branding || {};
-      await api.patch('/store', { branding: { ...existing, ...config } });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } finally { setSaving(false); }
   };
 
   const addSlide = () => {
@@ -234,7 +219,6 @@ export default function CustomizePage() {
               {config.heroStyle === 'light' && <p className="text-xs text-neutral-400 mt-1">Uses your light theme background + text colors.</p>}
             </div>
 
-            {/* Gradient picker */}
             {config.heroStyle === 'gradient' && (
               <div className="space-y-2">
                 <Label>Gradient Style</Label>
@@ -307,63 +291,57 @@ export default function CustomizePage() {
           </div>
         )}
 
+        {/* Section Panels — inside the form */}
+        <SectionPanel
+          title="Shop by Category"
+          enabled={config.showCategories}
+          onToggle={v => setConfig(c => ({ ...c, showCategories: v }))}
+          style={config.categoriesStyle}
+          onStyleChange={v => setConfig(c => ({ ...c, categoriesStyle: v as DisplayStyle }))}>
+          <p className="text-xs text-neutral-400">All your store categories will be displayed in this section.</p>
+        </SectionPanel>
+
+        <SectionPanel
+          title="New Arrivals"
+          enabled={config.showNewArrivals}
+          onToggle={v => setConfig(c => ({ ...c, showNewArrivals: v }))}
+          style={config.newArrivalsStyle}
+          onStyleChange={v => setConfig(c => ({ ...c, newArrivalsStyle: v as DisplayStyle }))}>
+          <ProductPicker
+            label="Select up to 10 products"
+            products={products}
+            selected={config.newArrivalIds}
+            onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))}
+          />
+        </SectionPanel>
+
+        <SectionPanel
+          title="Featured"
+          enabled={config.showFeatured}
+          onToggle={v => setConfig(c => ({ ...c, showFeatured: v }))}
+          style={config.featuredStyle}
+          onStyleChange={v => setConfig(c => ({ ...c, featuredStyle: v as DisplayStyle }))}>
+          <ProductPicker
+            label="Select up to 10 products"
+            products={products}
+            selected={config.featuredIds}
+            onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))}
+          />
+        </SectionPanel>
+
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
         <Button type="submit" disabled={saving} className="w-full">
           {saving ? 'Saving…' : 'Save'}
         </Button>
       </form>
-
-      {/* ── SECTION PANELS (outside form, saved inline) ── */}
-      <SectionPanel
-        title="Show by Category"
-        enabled={config.showCategories}
-        onToggle={v => setConfig(c => ({ ...c, showCategories: v }))}
-        style={config.categoriesStyle}
-        onStyleChange={v => setConfig(c => ({ ...c, categoriesStyle: v as DisplayStyle }))}
-        onSave={() => saveSections()}
-        saving={saving}>
-        <p className="text-xs text-neutral-400">All your store categories will be displayed in this section.</p>
-      </SectionPanel>
-
-      <SectionPanel
-        title="New Arrivals"
-        enabled={config.showNewArrivals}
-        onToggle={v => setConfig(c => ({ ...c, showNewArrivals: v }))}
-        style={config.newArrivalsStyle}
-        onStyleChange={v => setConfig(c => ({ ...c, newArrivalsStyle: v as DisplayStyle }))}
-        onSave={() => saveSections()}
-        saving={saving}>
-        <ProductPicker
-          label="Select up to 10 products"
-          products={products}
-          selected={config.newArrivalIds}
-          onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))}
-        />
-      </SectionPanel>
-
-      <SectionPanel
-        title="Featured"
-        enabled={config.showFeatured}
-        onToggle={v => setConfig(c => ({ ...c, showFeatured: v }))}
-        style={config.featuredStyle}
-        onStyleChange={v => setConfig(c => ({ ...c, featuredStyle: v as DisplayStyle }))}
-        onSave={() => saveSections()}
-        saving={saving}>
-        <ProductPicker
-          label="Select up to 10 products"
-          products={products}
-          selected={config.featuredIds}
-          onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))}
-        />
-      </SectionPanel>
     </div>
   );
 }
 
-function SectionPanel({ title, enabled, onToggle, style, onStyleChange, onSave, saving, children }: Readonly<{
+function SectionPanel({ title, enabled, onToggle, style, onStyleChange, children }: Readonly<{
   title: string; enabled: boolean; onToggle: (v: boolean) => void;
   style: string; onStyleChange: (v: string) => void;
-  onSave: () => void; saving: boolean; children?: React.ReactNode;
+  children?: React.ReactNode;
 }>) {
   return (
     <Card>
@@ -388,7 +366,6 @@ function SectionPanel({ title, enabled, onToggle, style, onStyleChange, onSave, 
             </Select>
           </div>
           {children}
-          <Button size="sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
         </CardContent>
       )}
     </Card>

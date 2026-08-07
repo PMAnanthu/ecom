@@ -15,6 +15,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CAD: 'C$', SGD: 'S$', AED: 'د.إ',
 };
 
+const GCS_BUCKET = process.env.NEXT_PUBLIC_GCS_BUCKET || 'ecom-uploads-e-com-504518';
+
 const defaultCtx: StoreContext = { template: 'default', currency: 'USD', currencySymbol: '$' };
 const TemplateContext = createContext<StoreContext>(defaultCtx);
 
@@ -44,6 +46,32 @@ function ctxFromStore(s: { template: string; branding: Record<string, string> })
   return { template: s.template || 'default', currency, currencySymbol: CURRENCY_SYMBOLS[currency] || currency };
 }
 
+function subdomainFromDomain(domain: string): string {
+  return domain.replace(/\.ecom\.app$/, '');
+}
+
+// Fetch store config from GCS static JSON — fast, no DB hit
+async function fetchFromGCS(subdomain: string): Promise<Record<string, unknown> | null> {
+  try {
+    const url = `https://storage.googleapis.com/${GCS_BUCKET}/config/${subdomain}.json`;
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return await res.json() as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+// Fallback: fetch from resolve API
+async function fetchFromAPI(domain: string): Promise<Record<string, unknown> | null> {
+  try {
+    const r = await api.get(`/storefront/resolve?domain=${domain}`);
+    return r.data.store as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 interface TemplateProviderProps { children: ReactNode; storeSlug?: string }
 
 export function TemplateProvider({ children, storeSlug }: Readonly<TemplateProviderProps>) {
@@ -54,34 +82,36 @@ export function TemplateProvider({ children, storeSlug }: Readonly<TemplateProvi
 
   useEffect(() => {
     const domain = resolveStoreDomain(storeSlug);
-
     if (!domain) { setNotFound(true); setReady(true); return; }
 
-    const requestedSubdomain = domain.replace(/\.ecom\.app$/, '');
+    const requestedSubdomain = subdomainFromDomain(domain);
 
-    // Cache-first: if we have a matching cached store, render immediately
+    // Cache-first: render immediately from Zustand cache
     if (store?.subdomain === requestedSubdomain) {
       setCtx(ctxFromStore(store as { template: string; branding: Record<string, string> }));
       setReady(true);
-      // Background refresh — updates branding/template without blocking render
-      api.get(`/storefront/resolve?domain=${domain}`)
-        .then((r) => { setStore(r.data.store); setCtx(ctxFromStore(r.data.store)); })
-        .catch(() => {});
+      // Background refresh from GCS, then API fallback
+      fetchFromGCS(requestedSubdomain).then(async (data) => {
+        const s = data ?? await fetchFromAPI(domain);
+        if (s) { setStore(s as never); setCtx(ctxFromStore(s as { template: string; branding: Record<string, string> })); }
+      });
       return;
     }
 
-    // No cache match — blocking fetch
+    // No cache — try GCS first (fast), then API fallback
     if (store?.subdomain && store.subdomain !== requestedSubdomain) {
       setStore(null as never);
     }
 
-    api.get(`/storefront/resolve?domain=${domain}`)
-      .then((r) => {
-        setStore(r.data.store);
-        setCtx(ctxFromStore(r.data.store));
-      })
-      .catch(() => setNotFound(true))
-      .finally(() => setReady(true));
+    fetchFromGCS(requestedSubdomain).then(async (data) => {
+      const s = data ?? await fetchFromAPI(domain);
+      if (s) {
+        setStore(s as never);
+        setCtx(ctxFromStore(s as { template: string; branding: Record<string, string> }));
+      } else {
+        setNotFound(true);
+      }
+    }).finally(() => setReady(true));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storeSlug]);
 

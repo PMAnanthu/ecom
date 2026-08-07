@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import { upload, saveUpload } from '../lib/upload';
+import { publishStoreConfig } from '../lib/configPublisher';
 
 const prisma = new PrismaClient();
 export const storeRouter = Router();
@@ -13,7 +14,7 @@ const createSchema = z.object({
   template: z.string().default('default'),
   email: z.string().email().optional(),
   phone: z.string().optional(),
-  adminId: z.string().optional(), // allow super-admin to assign an admin
+  adminId: z.string().optional(),
 });
 
 const updateSchema = z.object({
@@ -54,6 +55,7 @@ storeRouter.post('/admin-create', async (req: Request, res: Response) => {
   if (existing) { res.status(409).json({ error: 'This admin already has a store' }); return; }
 
   const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, storeUrlId: parsed.data.storeUrlId ?? parsed.data.subdomain, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
+  void publishStoreConfig(store);
   res.status(201).json({ store });
 });
 
@@ -62,6 +64,7 @@ storeRouter.patch('/admin-update/:id', async (req: Request, res: Response) => {
   const parsed = updateSchema.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
   const store = await prisma.store.update({ where: { id: req.params.id }, data: parsed.data as Parameters<typeof prisma.store.update>[0]['data'] });
+  void publishStoreConfig(store);
   res.json({ store });
 });
 
@@ -69,6 +72,7 @@ storeRouter.patch('/admin-update/:id', async (req: Request, res: Response) => {
 storeRouter.patch('/admin-toggle-live/:id', async (req: Request, res: Response) => {
   const { live } = req.body;
   const store = await prisma.store.update({ where: { id: req.params.id }, data: { live: Boolean(live) } });
+  void publishStoreConfig(store);
   res.json({ store });
 });
 
@@ -115,6 +119,7 @@ storeRouter.post('/', async (req: Request, res: Response) => {
 
   const storeData = { ...parsed.data, storeUrlId: parsed.data.storeUrlId ?? parsed.data.subdomain };
   const store = await prisma.store.create({ data: { ...storeData, adminId } });
+  void publishStoreConfig(store);
   res.status(201).json({ store });
 });
 
@@ -125,6 +130,7 @@ storeRouter.patch('/', async (req: Request, res: Response) => {
 
   const data: Record<string, unknown> = { ...parsed.data };
   const store = await prisma.store.update({ where: { adminId }, data: data as Parameters<typeof prisma.store.update>[0]['data'] });
+  void publishStoreConfig(store);
   res.json({ store });
 });
 
@@ -142,24 +148,19 @@ storeRouter.patch('/publish', async (req: Request, res: Response) => {
   const adminEmail = req.headers['x-user-email'] as string;
   const { published } = req.body;
 
-  // Only check subscription when trying to publish (not when unpublishing)
   if (published) {
     try {
       const platformUrl = process.env.PLATFORM_SERVICE_URL || 'http://platform-service:3002';
-      const subRes = await fetch(`${platformUrl}/subscription-status`, {
-        headers: { 'x-user-email': adminEmail },
-      });
+      const subRes = await fetch(`${platformUrl}/subscription-status`, { headers: { 'x-user-email': adminEmail } });
       if (subRes.ok) {
         const subData = await subRes.json() as { expired: boolean };
-        if (subData.expired) {
-          res.status(403).json({ error: 'Subscription required to publish your store' });
-          return;
-        }
+        if (subData.expired) { res.status(403).json({ error: 'Subscription required to publish your store' }); return; }
       }
-    } catch { /* if platform is unreachable, allow publish */ }
+    } catch { /* allow publish if platform unreachable */ }
   }
 
   const store = await prisma.store.update({ where: { adminId }, data: { published: Boolean(published) } });
+  void publishStoreConfig(store);
   res.json({ store });
 });
 
@@ -168,5 +169,6 @@ storeRouter.patch('/domain', async (req: Request, res: Response) => {
   const { domain } = req.body;
   if (!domain) { res.status(400).json({ error: 'domain required' }); return; }
   const store = await prisma.store.update({ where: { adminId }, data: { domain } });
+  void publishStoreConfig(store);
   res.json({ store, dnsInstructions: `Point CNAME ${domain} → ${store.subdomain}.ecom.app` });
 });
