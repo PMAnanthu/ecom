@@ -10,6 +10,9 @@ const createSchema = z.object({
   name: z.string().min(1),
   subdomain: z.string().min(3).regex(/^[a-z0-9-]+$/),
   template: z.string().default('default'),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  adminId: z.string().optional(), // allow super-admin to assign an admin
 });
 
 const updateSchema = z.object({
@@ -17,6 +20,41 @@ const updateSchema = z.object({
   template: z.string().optional(),
   branding: z.record(z.unknown()).optional(),
   domain: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  adminId: z.string().optional(),
+});
+
+// Super-admin: list all stores
+storeRouter.get('/all', async (_req: Request, res: Response) => {
+  const stores = await prisma.store.findMany({ orderBy: { createdAt: 'desc' } });
+  res.json({ stores });
+});
+
+// Super-admin: create store with explicit adminId
+storeRouter.post('/admin-create', async (req: Request, res: Response) => {
+  const parsed = createSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+
+  const assignedAdminId = parsed.data.adminId;
+  if (!assignedAdminId) { res.status(400).json({ error: 'adminId required' }); return; }
+
+  const subdomainTaken = await prisma.store.findUnique({ where: { subdomain: parsed.data.subdomain } });
+  if (subdomainTaken) { res.status(409).json({ error: 'Subdomain already taken' }); return; }
+
+  const existing = await prisma.store.findUnique({ where: { adminId: assignedAdminId } });
+  if (existing) { res.status(409).json({ error: 'This admin already has a store' }); return; }
+
+  const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
+  res.status(201).json({ store });
+});
+
+// Super-admin: update any store by id
+storeRouter.patch('/admin-update/:id', async (req: Request, res: Response) => {
+  const parsed = updateSchema.safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.flatten() }); return; }
+  const store = await prisma.store.update({ where: { id: req.params.id }, data: parsed.data as Parameters<typeof prisma.store.update>[0]['data'] });
+  res.json({ store });
 });
 
 storeRouter.get('/by-ids', async (req: Request, res: Response) => {

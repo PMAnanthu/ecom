@@ -15,9 +15,11 @@ import {
 
 const superAdminLinks = [
   { href: '/super/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/super/admins', label: 'Admins & Customers', icon: Users },
+  { href: '/super/admins', label: 'Admin', icon: Users },
+  { href: '/super/stores', label: 'Store', icon: Globe },
+  { href: '/super/customers', label: 'Customer', icon: ShoppingBag },
   { href: '/super/templates', label: 'Templates', icon: LayoutTemplate },
-  { href: '/super/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { href: '/super/subscriptions', label: 'Subscription', icon: CreditCard },
 ];
 
 const customizeSubLinks = [

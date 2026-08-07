@@ -118,6 +118,11 @@ app.get('/api/platform/templates', forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 app.all('/api/platform/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 
+// Store: super-admin routes (list all, create, update any)
+app.all('/api/store/all', ...mw(authenticate, requireRole('SUPERADMIN')), forward(STORE_URL, 'store'));
+app.all('/api/store/admin-create', ...mw(authenticate, requireRole('SUPERADMIN')), forward(STORE_URL, 'store'));
+app.all('/api/store/admin-update/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(STORE_URL, 'store'));
+
 // Store: admin only — upload handled directly in gateway (multipart proxy issue)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 app.post('/api/store/upload', ...mw(authenticate, requireRole('ADMIN')), memUpload.single('file') as any, (req: Request, res: Response) => handleUpload(req, res));
