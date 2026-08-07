@@ -20,7 +20,7 @@ interface Admin { id: string; email: string }
 interface PlatformAdmin { id: string; email: string; availableDays: number }
 type Modal = { type: 'create' } | { type: 'edit'; store: StoreRow } | null;
 
-const emptyForm = { name: '', subdomain: '', email: '', phone: '', adminId: '' };
+const emptyForm = { name: '', subdomain: '', email: '', phone: '', adminId: '', domain: '' };
 
 function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSave, onClose }: {
   readonly modal: Modal;
@@ -67,6 +67,21 @@ function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSa
                         <option key={a.id} value={a.id}>{a.email}</option>
                       ))}
                     </select>
+                  </div>
+                </>
+              )}
+
+              {!isCreate && (
+                <>
+                  <div className="space-y-1 col-span-2">
+                    <Label>Store ID <span className="text-neutral-400 text-xs">(URL identifier)</span></Label>
+                    <Input placeholder="my-store" value={form.subdomain}
+                      onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label>Custom Domain <span className="text-neutral-400 text-xs">(opt — e.g. mystore.com)</span></Label>
+                    <Input placeholder="mystore.com" value={form.domain}
+                      onChange={e => setForm({ ...form, domain: e.target.value })} />
                   </div>
                 </>
               )}
@@ -132,7 +147,7 @@ export default function SuperStoresPage() {
       if (isCreate) {
         await api.post('/store/admin-create', { name: form.name, subdomain: form.subdomain, storeUrlId: form.subdomain, email: form.email || undefined, phone: form.phone || undefined, adminId: form.adminId });
       } else if (modal?.type === 'edit') {
-        await api.patch(`/store/admin-update/${modal.store.id}`, { name: form.name, email: form.email || undefined, phone: form.phone || undefined });
+        await api.patch(`/store/admin-update/${modal.store.id}`, { name: form.name, subdomain: form.subdomain || undefined, domain: form.domain || undefined, email: form.email || undefined, phone: form.phone || undefined });
       }
       close(); await load(); flash(isCreate ? 'Store created' : 'Store updated');
     } catch (err: unknown) {
@@ -141,7 +156,7 @@ export default function SuperStoresPage() {
   };
 
   const openEdit = (s: StoreRow) => {
-    setForm({ name: s.name, subdomain: s.subdomain, email: s.email || '', phone: s.phone || '', adminId: s.adminId });
+    setForm({ name: s.name, subdomain: s.subdomain, email: s.email || '', phone: s.phone || '', adminId: s.adminId, domain: s.domain || '' });
     setModal({ type: 'edit', store: s });
     setError('');
   };

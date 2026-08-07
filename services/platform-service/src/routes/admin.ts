@@ -24,6 +24,20 @@ adminRouter.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ admin });
 });
 
+// Upsert by email — creates platform entry if missing, then sets status
+adminRouter.post('/upsert-status', async (req: Request, res: Response) => {
+  const { email, status } = req.body;
+  if (!email || !['ACTIVE', 'SUSPENDED'].includes(status)) {
+    res.status(400).json({ error: 'email and valid status required' }); return;
+  }
+  const admin = await prisma.adminUser.upsert({
+    where: { email },
+    update: { status },
+    create: { email, status },
+  });
+  res.json({ admin });
+});
+
 adminRouter.patch('/:id/status', async (req: Request, res: Response) => {
   const { status } = req.body;
   if (!['ACTIVE', 'SUSPENDED', 'DELETED'].includes(status)) {
@@ -46,6 +60,7 @@ adminRouter.patch('/:id/subscription', async (req: Request, res: Response) => {
       let days = 30;
       if (sub.billingPeriod === 'YEARLY') days = 365;
       else if (sub.billingPeriod === 'QUARTERLY') days = 90;
+      else if (sub.billingPeriod === 'UNLIMITED') days = 36500;
       data.availableDays = days;
     }
   }

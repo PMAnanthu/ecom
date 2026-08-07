@@ -38,6 +38,7 @@ enum BillingPeriod {
   MONTHLY
   QUARTERLY
   YEARLY
+  UNLIMITED
   @@schema("platform_svc")
 }
 

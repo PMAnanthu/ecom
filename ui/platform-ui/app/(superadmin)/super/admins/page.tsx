@@ -46,10 +46,17 @@ export default function SuperAdminsPage() {
   };
 
   const toggleSuspend = async (a: AdminRow) => {
-    if (!a.platformId) return;
-    const s = a.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-    await api.patch(`/platform/admins/${a.platformId}/status`, { status: s });
-    await load(); flash(`${a.email} ${s === 'ACTIVE' ? 'activated' : 'suspended'}`);
+    const newStatus = a.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    try {
+      if (a.platformId) {
+        await api.patch(`/platform/admins/${a.platformId}/status`, { status: newStatus });
+      } else {
+        // Platform entry doesn't exist yet — upsert it
+        await api.post('/platform/admins/upsert-status', { email: a.email, status: newStatus });
+      }
+      await load();
+      flash(`${a.email} ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'}`);
+    } catch { setError('Failed to update status'); }
   };
 
   const del = async (a: AdminRow) => {
