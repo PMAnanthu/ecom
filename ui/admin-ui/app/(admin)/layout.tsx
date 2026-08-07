@@ -71,7 +71,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
     try {
       const { data } = await api.get('/platform/subscription-status');
       setSubStatus(data);
-      if (data.expired) setShowExpired(true);
+      if (data.expired && pathname !== '/subscription') setShowExpired(true);
     } catch { /* non-blocking */ }
   }, []);
 
@@ -81,12 +81,10 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
     }
   }, [hydrated, user, checkSubscription]);
 
-  // Re-check on route change
+  // Hide popup when user navigates to subscription page
   useEffect(() => {
-    if (hydrated && user?.role === 'ADMIN') {
-      checkSubscription();
-    }
-  }, [pathname, hydrated, user, checkSubscription]);
+    if (pathname === '/subscription') setShowExpired(false);
+  }, [pathname]);
 
   if (!hydrated || user?.role !== 'ADMIN') return null;
 
