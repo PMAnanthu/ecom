@@ -43,6 +43,16 @@ adminMgmtRouter.post('/', async (req: Request, res: Response) => {
   res.status(201).json({ user, store });
 });
 
+// List all customers (role=USER)
+adminMgmtRouter.get('/customers', async (_req: Request, res: Response) => {
+  const users = await prisma.user.findMany({
+    where: { role: 'USER' },
+    select: { id: true, email: true, storeId: true, createdAt: true },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json({ users });
+});
+
 // Stats for super-admin dashboard
 adminMgmtRouter.get('/stats', async (_req: Request, res: Response) => {
   const [total, activeUsers, inactiveUsers] = await Promise.all([

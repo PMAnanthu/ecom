@@ -15,7 +15,7 @@ import {
 
 const superAdminLinks = [
   { href: '/super/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/super/admins', label: 'Manage Admins', icon: Users },
+  { href: '/super/admins', label: 'Admins & Customers', icon: Users },
   { href: '/super/templates', label: 'Templates', icon: LayoutTemplate },
   { href: '/super/subscriptions', label: 'Subscriptions', icon: CreditCard },
 ];
