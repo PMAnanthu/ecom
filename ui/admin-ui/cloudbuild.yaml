@@ -1,0 +1,21 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['pull', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-admin-ui:latest']
+    allowFailure: true
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-admin-ui:latest'
+      - '--cache-from'
+      - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-admin-ui:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://ecom-api-gateway-496160804659.us-east1.run.app/api'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_STOREFRONT_URL=https://ecom-storefront-m6jmogmpra-ue.a.run.app'
+      - '.'
+    dir: 'ui/admin-ui'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-admin-ui:latest']
+images:
+  - 'us-east1-docker.pkg.dev/$PROJECT_ID/ecom/ecom-admin-ui:latest'

@@ -10,7 +10,7 @@ export default function RootPage() {
 
   useEffect(() => {
     if (!user) { router.replace('/login'); return; }
-    router.replace('/super/dashboard');
+    router.replace('/dashboard');
   }, [user, router]);
 
   return null;

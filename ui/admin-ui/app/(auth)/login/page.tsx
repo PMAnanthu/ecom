@@ -14,7 +14,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { setAuth } = useAuthStore();
+  const { setAuth, setStoreId } = useAuthStore();
   const router = useRouter();
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -23,12 +23,16 @@ export default function LoginPage() {
     setError('');
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      if (data.user.role !== 'SUPERADMIN') {
-        setError('Access denied. Super admin accounts only.');
+      if (data.user.role !== 'ADMIN') {
+        setError('Access denied. Admin accounts only.');
         return;
       }
       setAuth(data.user, data.accessToken, data.refreshToken);
-      router.push('/super/dashboard');
+      try {
+        const storeRes = await api.get('/store');
+        setStoreId(storeRes.data.store.id);
+      } catch { /* store not created yet */ }
+      router.push('/dashboard');
     } catch {
       setError('Invalid email or password');
     } finally {
@@ -41,7 +45,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl">ecom.app</CardTitle>
-          <p className="text-sm text-neutral-500">Super Admin Portal</p>
+          <p className="text-sm text-neutral-500">Sign in to your admin dashboard</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

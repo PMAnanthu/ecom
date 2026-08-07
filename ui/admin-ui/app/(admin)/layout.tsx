@@ -6,16 +6,20 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Menu, ShoppingBag } from 'lucide-react';
 
-export default function DashboardLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { user } = useAuthStore();
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => { setHydrated(true); }, []);
-  useEffect(() => { if (hydrated && !user) router.replace('/login'); }, [hydrated, user, router]);
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!user) { router.replace('/login'); return; }
+    if (user.role !== 'ADMIN') { router.replace('/login'); }
+  }, [hydrated, user, router]);
 
-  if (!hydrated || !user) return null;
+  if (!hydrated || !user || user.role !== 'ADMIN') return null;
 
   return (
     <div className="flex min-h-screen bg-neutral-50">

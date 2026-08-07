@@ -19,8 +19,9 @@ ecom/
 │   ├── order-service/  # Port 3005 — cart (Redis), checkout, order status
 │   └── storefront-service/ # Port 3006 — public: resolve domain → store config
 ├── ui/
-│   ├── platform-ui/    # Next.js 14 — Super Admin + Admin dashboard
-│   └── storefront/     # Next.js 14 PWA — customer-facing, multi-tenant by Host header
+│   ├── platform-ui/    # Next.js — Super Admin dashboard (SUPERADMIN role only)
+│   ├── admin-ui/       # Next.js — Merchant Admin dashboard (ADMIN role only)
+│   └── storefront/     # Next.js PWA — customer-facing, multi-tenant by Host header
 ├── k8s/                # Kubernetes manifests (namespace ecom, Traefik ingress)
 ├── docker-compose.yml  # Local dev only
 └── tsconfig.base.json  # Shared TS config extended by each service
@@ -53,11 +54,12 @@ npm test           # jest
 
 Frontend apps:
 ```bash
-cd platform-ui     # or storefront/
+cd ui/platform-ui   # Super Admin (SUPERADMIN role)
+cd ui/admin-ui      # Merchant Admin (ADMIN role)
+cd ui/storefront    # Customer storefront
 npm install
 npm run dev        # Next.js dev server
 npm run build
-npm test
 ```
 
 ## Environment Variables
