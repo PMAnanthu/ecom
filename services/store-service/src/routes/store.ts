@@ -9,7 +9,7 @@ export const storeRouter = Router();
 const createSchema = z.object({
   name: z.string().min(1),
   subdomain: z.string().min(3).regex(/^[a-z0-9-]+$/),
-  storeUrlId: z.string().min(3).regex(/^[a-z0-9-]+$/),
+  storeUrlId: z.string().min(3).regex(/^[a-z0-9-]+$/).optional(),
   template: z.string().default('default'),
   email: z.string().email().optional(),
   phone: z.string().optional(),
@@ -45,13 +45,15 @@ storeRouter.post('/admin-create', async (req: Request, res: Response) => {
   const subdomainTaken = await prisma.store.findUnique({ where: { subdomain: parsed.data.subdomain } });
   if (subdomainTaken) { res.status(409).json({ error: 'Subdomain already taken' }); return; }
 
-  const urlIdTaken = await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } });
+  const urlIdTaken = parsed.data.storeUrlId
+    ? await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } })
+    : null;
   if (urlIdTaken) { res.status(409).json({ error: 'Store URL ID already taken' }); return; }
 
   const existing = await prisma.store.findUnique({ where: { adminId: assignedAdminId } });
   if (existing) { res.status(409).json({ error: 'This admin already has a store' }); return; }
 
-  const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, storeUrlId: parsed.data.storeUrlId, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
+  const store = await prisma.store.create({ data: { name: parsed.data.name, subdomain: parsed.data.subdomain, storeUrlId: parsed.data.storeUrlId ?? parsed.data.subdomain, template: parsed.data.template, email: parsed.data.email, phone: parsed.data.phone, adminId: assignedAdminId } });
   res.status(201).json({ store });
 });
 
@@ -106,10 +108,13 @@ storeRouter.post('/', async (req: Request, res: Response) => {
   const subdomainTaken = await prisma.store.findUnique({ where: { subdomain: parsed.data.subdomain } });
   if (subdomainTaken) { res.status(409).json({ error: 'Subdomain already taken' }); return; }
 
-  const urlIdTaken = await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } });
+  const urlIdTaken = parsed.data.storeUrlId
+    ? await prisma.store.findUnique({ where: { storeUrlId: parsed.data.storeUrlId } })
+    : null;
   if (urlIdTaken) { res.status(409).json({ error: 'Store URL ID already taken' }); return; }
 
-  const store = await prisma.store.create({ data: { ...parsed.data, adminId } });
+  const storeData = { ...parsed.data, storeUrlId: parsed.data.storeUrlId ?? parsed.data.subdomain };
+  const store = await prisma.store.create({ data: { ...storeData, adminId } });
   res.status(201).json({ store });
 });
 

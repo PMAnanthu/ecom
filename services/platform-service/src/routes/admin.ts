@@ -5,17 +5,6 @@ import { z } from 'zod';
 const prisma = new PrismaClient();
 export const adminRouter = Router();
 
-const STORE_SERVICE_URL = process.env.STORE_SERVICE_URL || 'http://store-service:3003';
-const STOREFRONT_URL = process.env.STOREFRONT_URL || 'https://ecom-storefront-m6jmogmpra-ue.a.run.app';
-
-async function getStoreForAdmin(authUserId: string): Promise<{ subdomain?: string; name?: string } | null> {
-  try {
-    const res = await fetch(`${STORE_SERVICE_URL}/by-admin/${authUserId}`);
-    if (!res.ok) return null;
-    return (await res.json() as { store: { subdomain?: string; name?: string } }).store;
-  } catch { return null; }
-}
-
 adminRouter.get('/', async (_req: Request, res: Response) => {
   const admins = await prisma.adminUser.findMany({
     include: { subscription: true },

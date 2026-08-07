@@ -17,6 +17,7 @@ interface StoreRow {
   published: boolean; live: boolean; availableDays: number; createdAt: string;
 }
 interface Admin { id: string; email: string }
+interface PlatformAdmin { id: string; email: string; availableDays: number }
 type Modal = { type: 'create' } | { type: 'edit'; store: StoreRow } | null;
 
 const emptyForm = { name: '', subdomain: '', storeUrlId: '', email: '', phone: '', adminId: '' };
@@ -148,12 +149,24 @@ export default function SuperStoresPage() {
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    const [storesRes, adminsRes] = await Promise.all([
+    const [storesRes, adminsRes, platformRes] = await Promise.all([
       api.get('/store/all'),
       api.get('/auth/admin-mgmt'),
+      api.get('/platform/admins'),
     ]);
-    setStores(storesRes.data.stores || []);
-    setAdmins(adminsRes.data.users || []);
+    const authAdmins: Admin[] = adminsRes.data.users || [];
+    const platformAdmins: PlatformAdmin[] = platformRes.data.admins || [];
+    // Map auth user id → availableDays via matching email
+    const daysByEmail = new Map(platformAdmins.map(p => [p.email, p.availableDays ?? 0]));
+    const adminEmailMap = new Map(authAdmins.map(a => [a.id, { email: a.email, availableDays: daysByEmail.get(a.email) ?? 0 }]));
+
+    const rawStores = (storesRes.data.stores || []) as StoreRow[];
+    const enriched: StoreRow[] = rawStores.map(s => ({
+      ...s,
+      availableDays: adminEmailMap.get(s.adminId)?.availableDays ?? 0,
+    }));
+    setStores(enriched);
+    setAdmins(authAdmins);
   }, []);
 
   useEffect(() => { load().catch(() => {}); }, [load]);
