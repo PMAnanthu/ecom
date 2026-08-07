@@ -30,7 +30,7 @@ export default function OrdersPage() {
               <span className="font-mono text-xs text-neutral-400">{o.id}</span>
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{o.status}</Badge>
-                <Select value={o.status} onValueChange={(v) => v && updateStatus(o.id, v)}>
+                <Select value={o.status} onValueChange={(v) => v && updateStatus(o.id, v as string)}>
                   <SelectTrigger className="w-36 h-7 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}</SelectContent>
                 </Select>

@@ -65,7 +65,7 @@ export default function StoreSettingsPage() {
                 </div>
               </div>
               <div className="space-y-1"><Label>Template</Label>
-                <Select value={template} onValueChange={(v) => v && setTemplate(v)}>
+                <Select value={template} onValueChange={(v) => v && setTemplate(v as string)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{TEMPLATES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
                 </Select>
@@ -93,7 +93,7 @@ export default function StoreSettingsPage() {
       <Card className="max-w-md">
         <CardHeader><CardTitle className="text-base">Template</CardTitle></CardHeader>
         <CardContent className="space-y-3">
-          <Select value={template} onValueChange={(v) => v && setTemplate(v)}>
+          <Select value={template} onValueChange={(v) => v && setTemplate(v as string)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>{TEMPLATES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
           </Select>

@@ -95,7 +95,7 @@ export default function CustomizePage() {
             </div>
             <div className="space-y-1">
               <Label>Hero Style</Label>
-              <Select value={config.heroStyle} onValueChange={v => v && setConfig({ ...config, heroStyle: v })}>
+              <Select value={config.heroStyle} onValueChange={(v) => v && setConfig({ ...config, heroStyle: v as string })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>{HEADING_STYLES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}</SelectContent>
               </Select>
