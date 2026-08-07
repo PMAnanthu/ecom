@@ -9,11 +9,12 @@ import { api } from '@/lib/api';
 import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, LogOut, ShoppingBag, ExternalLink,
-  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard,
+  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard, Paintbrush,
 } from 'lucide-react';
 
 const customizeSubLinks = [
   { href: '/customize', label: 'Home', icon: Home },
+  { href: '/customize/theme', label: 'Theme & Template', icon: Paintbrush },
   { href: '/customize/about', label: 'About', icon: Info },
   { href: '/customize/navbar', label: 'Navbar', icon: Navigation },
 ];

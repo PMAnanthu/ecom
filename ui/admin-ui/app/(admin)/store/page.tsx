@@ -51,8 +51,6 @@ export default function StoreSettingsPage() {
     await load();
   };
 
-  const saveTemplate = async () => { await api.patch('/store', { template }); await load(); };
-
   const addDomain = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     const { data } = await api.patch('/store/domain', { domain });
@@ -136,17 +134,6 @@ export default function StoreSettingsPage() {
           {pubError} — <button onClick={() => router.push('/subscription')} className="underline font-medium">Subscribe now</button>
         </div>
       )}
-
-      <Card className="max-w-md">
-        <CardHeader><CardTitle className="text-base">Template</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <Select value={template} onValueChange={v => v && setTemplate(v as string)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>{TEMPLATES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-          </Select>
-          <Button onClick={saveTemplate} size="sm">Save Template</Button>
-        </CardContent>
-      </Card>
 
       <Card className="max-w-md">
         <CardHeader><CardTitle className="text-base">Custom Domain</CardTitle></CardHeader>
