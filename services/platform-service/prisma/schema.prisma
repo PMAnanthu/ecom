@@ -15,6 +15,7 @@ model AdminUser {
   status         AdminStatus   @default(ACTIVE)
   subscriptionId String?
   subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  renewsAt       DateTime?
   createdAt      DateTime      @default(now())
   @@schema("platform_svc")
 }

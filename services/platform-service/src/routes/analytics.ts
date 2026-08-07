@@ -15,7 +15,7 @@ analyticsRouter.get('/', async (_req, res) => {
     prisma.subscription.count(),
     fetch(`${storeServiceUrl}/stats`).then(r => r.ok ? r.json() : { total: 0, published: 0 }).catch(() => ({ total: 0, published: 0 })),
     fetch(`${orderServiceUrl}/stats`).then(r => r.ok ? r.json() : { total: 0, revenue: 0 }).catch(() => ({ total: 0, revenue: 0 })),
-    fetch(`${authServiceUrl}/admin-mgmt/stats`).then(r => r.ok ? r.json() : { customers: { total: 0, active: 0, inactive: 0 } }).catch(() => ({ customers: { total: 0, active: 0, inactive: 0 } })),
+    fetch(`${authServiceUrl}/admin-mgmt/stats`).then(r => r.ok ? r.json() as Promise<{ customers: { total: number; active: number; inactive: number } }> : { customers: { total: 0, active: 0, inactive: 0 } }).catch(() => ({ customers: { total: 0, active: 0, inactive: 0 } })),
   ]);
 
   res.json({

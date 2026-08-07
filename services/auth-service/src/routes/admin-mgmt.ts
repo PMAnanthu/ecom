@@ -53,14 +53,34 @@ adminMgmtRouter.get('/stats', async (_req: Request, res: Response) => {
   res.json({ customers: { total, active: activeUsers, inactive: inactiveUsers } });
 });
 
-// List all admin users
+// List all admin users with their store info
 adminMgmtRouter.get('/', async (_req: Request, res: Response) => {
   const users = await prisma.user.findMany({
     where: { role: 'ADMIN' },
     select: { id: true, email: true, role: true, storeId: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
   });
-  res.json({ users });
+
+  // Fetch store subdomains for users that have a storeId
+  const storeIds = users.map(u => u.storeId).filter(Boolean) as string[];
+  let storeMap: Record<string, { subdomain?: string; name?: string }> = {};
+  if (storeIds.length > 0) {
+    try {
+      const storeServiceUrl = process.env.STORE_SERVICE_URL || 'http://store-service:3003';
+      const res = await fetch(`${storeServiceUrl}/by-ids?ids=${storeIds.join(',')}`);
+      if (res.ok) {
+        const data = await res.json() as { stores: { id: string; subdomain?: string; name?: string }[] };
+        storeMap = Object.fromEntries(data.stores.map(s => [s.id, s]));
+      }
+    } catch { /* best effort */ }
+  }
+
+  const enriched = users.map(u => ({
+    ...u,
+    store: u.storeId ? storeMap[u.storeId] ?? null : null,
+  }));
+
+  res.json({ users: enriched });
 });
 
 // Change any user's password (super-admin)

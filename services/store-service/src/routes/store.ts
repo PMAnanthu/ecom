@@ -19,6 +19,24 @@ const updateSchema = z.object({
   domain: z.string().optional(),
 });
 
+storeRouter.get('/by-ids', async (req: Request, res: Response) => {
+  const ids = ((req.query.ids as string) || '').split(',').filter(Boolean);
+  if (ids.length === 0) { res.json({ stores: [] }); return; }
+  const stores = await prisma.store.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, name: true, subdomain: true, published: true },
+  });
+  res.json({ stores });
+});
+
+storeRouter.get('/by-admin/:adminId', async (req: Request, res: Response) => {
+  const store = await prisma.store.findUnique({
+    where: { adminId: req.params.adminId },
+    select: { id: true, name: true, subdomain: true, published: true },
+  });
+  res.json({ store: store ?? null });
+});
+
 storeRouter.get('/', async (req: Request, res: Response) => {
   const adminId = req.headers['x-user-id'] as string;
   const store = await prisma.store.findUnique({ where: { adminId } });

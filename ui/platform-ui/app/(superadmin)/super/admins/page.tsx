@@ -8,16 +8,26 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, KeyRound, Ban, CheckCircle } from 'lucide-react';
+import { Trash2, KeyRound, Ban, CheckCircle, ExternalLink } from 'lucide-react';
 
-interface AdminUser { id: string; email: string; role: string; storeId?: string; createdAt: string }
+const STOREFRONT_BASE = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://ecom-storefront-m6jmogmpra-ue.a.run.app';
+
+interface Store { subdomain?: string; name?: string }
+interface AuthUser { id: string; email: string; storeId?: string; store?: Store; createdAt: string }
+interface PlatformAdmin { id: string; email: string; status: string; subscriptionId?: string; renewsAt?: string; subscription?: { id: string; name: string } }
+interface AdminRow extends AuthUser { platformId?: string; status: string; subscriptionId?: string; renewsAt?: string; subscriptionName?: string }
 interface Sub { id: string; name: string }
 type Modal = { type: 'password'; id: string; email: string } | { type: 'own-password' } | null;
 
+function daysUntil(dateStr?: string): number | null {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
 export default function AdminsPage() {
-  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [admins, setAdmins] = useState<AdminRow[]>([]);
   const [subs, setSubs] = useState<Sub[]>([]);
-  const [suspendedIds, setSuspendedIds] = useState<Set<string>>(new Set());
   const [form, setForm] = useState({ email: '', password: '', storeName: '', subdomain: '' });
   const [modal, setModal] = useState<Modal>(null);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
@@ -27,12 +37,28 @@ export default function AdminsPage() {
 
   const load = async () => {
     try {
-      const [adminsRes, subsRes] = await Promise.all([
+      const [authRes, platformRes, subsRes] = await Promise.all([
         api.get('/auth/admin-mgmt'),
+        api.get('/platform/admins'),
         api.get('/platform/subscriptions'),
       ]);
-      setAdmins(adminsRes.data.users || []);
+      const authUsers: AuthUser[] = authRes.data.users || [];
+      const platformAdmins: PlatformAdmin[] = platformRes.data.admins || [];
       setSubs(subsRes.data.subscriptions || []);
+
+      const platformByEmail = new Map(platformAdmins.map(a => [a.email, a]));
+      const rows: AdminRow[] = authUsers.map(u => {
+        const p = platformByEmail.get(u.email);
+        return {
+          ...u,
+          platformId: p?.id,
+          status: p?.status || 'ACTIVE',
+          subscriptionId: p?.subscriptionId,
+          renewsAt: p?.renewsAt,
+          subscriptionName: p?.subscription?.name,
+        };
+      });
+      setAdmins(rows);
     } catch { setError('Failed to load admins'); }
   };
 
@@ -57,28 +83,36 @@ export default function AdminsPage() {
     } finally { setLoading(false); }
   };
 
-  const toggleSuspend = async (admin: AdminUser) => {
-    const isSuspended = suspendedIds.has(admin.id);
+  const toggleSuspend = async (admin: AdminRow) => {
+    if (!admin.platformId) { setError('Admin not synced to platform yet — delete and recreate'); return; }
+    const newStatus = admin.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
     try {
-      await api.patch(`/platform/admins/${admin.id}/status`, {
-        status: isSuspended ? 'ACTIVE' : 'SUSPENDED',
-      });
-      setSuspendedIds(prev => {
-        const s = new Set(prev);
-        if (isSuspended) s.delete(admin.id); else s.add(admin.id);
-        return s;
-      });
-      flash(isSuspended ? `${admin.email} activated` : `${admin.email} suspended`);
+      await api.patch(`/platform/admins/${admin.platformId}/status`, { status: newStatus });
+      await load();
+      flash(`${admin.email} ${newStatus === 'ACTIVE' ? 'activated' : 'suspended'}`);
     } catch { setError('Failed to update status'); }
   };
 
-  const deleteAdmin = async (admin: AdminUser) => {
+  const deleteAdmin = async (admin: AdminRow) => {
     if (!confirm(`Delete ${admin.email}? This cannot be undone.`)) return;
     try {
       await api.delete(`/auth/admin-mgmt/${admin.id}`);
       await load();
       flash('Admin deleted');
     } catch { setError('Failed to delete admin'); }
+  };
+
+  const assignSub = async (admin: AdminRow, subId: string) => {
+    if (!admin.platformId) return;
+    const renewsAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    try {
+      await api.patch(`/platform/admins/${admin.platformId}/subscription`, {
+        subscriptionId: subId === '__none__' ? null : subId,
+        renewsAt: subId === '__none__' ? null : renewsAt,
+      });
+      await load();
+      flash('Subscription updated');
+    } catch { setError('Failed to update subscription'); }
   };
 
   const changePassword = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -99,7 +133,7 @@ export default function AdminsPage() {
   };
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Admins</h1>
         <Button variant="outline" size="sm" onClick={() => { setModal({ type: 'own-password' }); setPwForm({ current: '', newPw: '', confirm: '' }); setError(''); }}>
@@ -107,12 +141,11 @@ export default function AdminsPage() {
         </Button>
       </div>
 
-      {/* Create Admin */}
       <Card className="mb-6">
         <CardHeader><CardTitle className="text-base">Create Admin Account</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={createAdmin} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="space-y-1">
                 <Label>Email</Label>
                 <Input type="email" placeholder="admin@example.com" value={form.email}
@@ -123,15 +156,13 @@ export default function AdminsPage() {
                 <Input type="password" placeholder="Min 6 chars" value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label>Store Name <span className="text-neutral-400 text-xs">(optional)</span></Label>
+                <Label>Store Name</Label>
                 <Input placeholder="My Jewellery Store" value={form.storeName}
                   onChange={e => setForm({ ...form, storeName: e.target.value })} />
               </div>
               <div className="space-y-1">
-                <Label>Subdomain <span className="text-neutral-400 text-xs">(optional)</span></Label>
+                <Label>Subdomain</Label>
                 <div className="flex items-center gap-1">
                   <Input placeholder="mystore" value={form.subdomain}
                     onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} />
@@ -146,58 +177,82 @@ export default function AdminsPage() {
         </CardContent>
       </Card>
 
-      {/* Admin List */}
-      <div className="space-y-2">
-        {admins.length === 0 && <p className="text-sm text-neutral-400">No admin accounts yet.</p>}
-        {admins.map((a) => {
-          const suspended = suspendedIds.has(a.id);
-          return (
-            <div key={a.id} className={`flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-xl border transition-opacity ${suspended ? 'opacity-60' : ''}`}>
-              <div className="min-w-0">
-                <p className="font-medium text-sm truncate">{a.email}</p>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-xs text-neutral-400">{new Date(a.createdAt).toLocaleDateString()}</p>
-                  {a.storeId && <span className="text-xs text-indigo-500 font-mono">has store</span>}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant={suspended ? 'secondary' : 'default'}>{suspended ? 'SUSPENDED' : 'ACTIVE'}</Badge>
-
-                {/* Assign subscription */}
-                {subs.length > 0 && (
-                  <Select onValueChange={async (subId) => {
-                    try {
-                      await api.patch(`/platform/admins/${a.id}/subscription`, { subscriptionId: subId === '__none__' ? null : subId });
-                      flash('Subscription updated');
-                    } catch { setError('Failed to update subscription'); }
-                  }}>
-                    <SelectTrigger className="h-8 text-xs w-32">
-                      <SelectValue placeholder="Assign plan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">No plan</SelectItem>
-                      {subs.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-
-                <Button size="sm" variant="outline"
-                  onClick={() => { setModal({ type: 'password', id: a.id, email: a.email }); setPwForm({ current: '', newPw: '', confirm: '' }); setError(''); }}>
-                  <KeyRound size={12} className="mr-1" /> PW
-                </Button>
-                <Button size="sm" variant={suspended ? 'default' : 'outline'} onClick={() => toggleSuspend(a)}>
-                  {suspended ? <><CheckCircle size={12} className="mr-1" />Activate</> : <><Ban size={12} className="mr-1" />Suspend</>}
-                </Button>
-                <Button size="sm" variant="destructive" onClick={() => deleteAdmin(a)}>
-                  <Trash2 size={12} />
-                </Button>
-              </div>
-            </div>
-          );
-        })}
+      <div className="overflow-x-auto rounded-xl border bg-white">
+        <table className="w-full text-sm">
+          <thead className="bg-neutral-50 border-b">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">Admin</th>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">Storefront</th>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">Subscription</th>
+              <th className="text-left px-4 py-3 font-medium text-neutral-500">Renewal</th>
+              <th className="px-4 py-3" />
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {admins.length === 0 && (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-neutral-400">No admin accounts yet.</td></tr>
+            )}
+            {admins.map((a) => {
+              const suspended = a.status === 'SUSPENDED';
+              const days = daysUntil(a.renewsAt);
+              const storefront = a.store?.subdomain ? `${STOREFRONT_BASE}/s/${a.store.subdomain}` : null;
+              return (
+                <tr key={a.id} className={suspended ? 'opacity-60 bg-neutral-50' : 'hover:bg-neutral-50/50'}>
+                  <td className="px-4 py-3">
+                    <p className="font-medium">{a.email}</p>
+                    <p className="text-xs text-neutral-400">{new Date(a.createdAt).toLocaleDateString()}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {storefront ? (
+                      <a href={storefront} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-indigo-600 hover:underline text-xs font-mono">
+                        {a.store?.subdomain}.ecom.app <ExternalLink size={11} />
+                      </a>
+                    ) : <span className="text-xs text-neutral-400">No store</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge variant={suspended ? 'secondary' : 'default'}>{a.status}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Select onValueChange={v => assignSub(a, v)}>
+                      <SelectTrigger className="h-7 text-xs w-36">
+                        <SelectValue placeholder={a.subscriptionName || 'No plan'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No plan</SelectItem>
+                        {subs.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="px-4 py-3">
+                    {days !== null ? (
+                      <span className={`text-xs font-medium ${days < 7 ? 'text-red-500' : days < 30 ? 'text-orange-500' : 'text-green-600'}`}>
+                        {days > 0 ? `${days}d left` : 'Expired'}
+                      </span>
+                    ) : <span className="text-xs text-neutral-400">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5 justify-end">
+                      <Button size="sm" variant="outline" className="h-7 px-2"
+                        onClick={() => { setModal({ type: 'password', id: a.id, email: a.email }); setPwForm({ current: '', newPw: '', confirm: '' }); setError(''); }}>
+                        <KeyRound size={12} />
+                      </Button>
+                      <Button size="sm" variant={suspended ? 'default' : 'outline'} className="h-7 px-2" onClick={() => toggleSuspend(a)}>
+                        {suspended ? <CheckCircle size={12} /> : <Ban size={12} />}
+                      </Button>
+                      <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => deleteAdmin(a)}>
+                        <Trash2 size={12} />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
-      {/* Password Modal */}
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-sm">
