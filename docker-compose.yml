@@ -138,6 +138,22 @@ services:
           path: ./services/storefront-service/src
           target: /app/src
 
+  notification-service:
+    build: ./services/notification-service
+    ports:
+      - '3007:3007'
+    environment:
+      PORT: 3007
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/notification-service/src
+          target: /app/src
+
   api-gateway:
     build: ./services/api-gateway
     ports:
@@ -151,6 +167,7 @@ services:
       CATALOG_SERVICE_URL: http://catalog-service:3004
       ORDER_SERVICE_URL: http://order-service:3005
       STOREFRONT_SERVICE_URL: http://storefront-service:3006
+      NOTIFICATION_SERVICE_URL: http://notification-service:3007
     depends_on:
       - auth-service
       - platform-service
@@ -158,6 +175,7 @@ services:
       - catalog-service
       - order-service
       - storefront-service
+      - notification-service
     develop:
       watch:
         - action: sync+restart

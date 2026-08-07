@@ -58,6 +58,7 @@ const STORE_URL = process.env.STORE_SERVICE_URL || 'http://store-service:3003';
 const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3004';
 const ORDER_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3005';
 const STOREFRONT_URL = process.env.STOREFRONT_SERVICE_URL || 'http://storefront-service:3006';
+const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3007';
 
 const proxy = httpProxy.createProxyServer({ changeOrigin: true, xfwd: true });
 proxy.on('error', (err, _req, res) => {
@@ -206,6 +207,12 @@ app.all('/api/addresses/*', ...mw(authenticate), forward(AUTH_URL, 'addresses'))
 // Orders: any authenticated user
 app.all('/api/orders', ...mw(authenticate), forward(ORDER_URL, 'orders'));
 app.all('/api/orders/*', ...mw(authenticate), forward(ORDER_URL, 'orders'));
+
+// Notifications: config + logs — super-admin only; /notify/send — internal (service-to-service)
+app.all('/api/notifications/config', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
+app.all('/api/notifications/config/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
+app.get('/api/notifications/logs', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
+app.all('/api/notifications/send', ...mw(authenticate), forward(NOTIFICATION_URL, 'notifications'));
 
 app.listen(PORT, () => console.log(`api-gateway running on port ${PORT}`));
 

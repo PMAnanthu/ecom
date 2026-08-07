@@ -139,7 +139,26 @@ storeRouter.post('/upload', upload.single('file'), async (req: Request, res: Res
 
 storeRouter.patch('/publish', async (req: Request, res: Response) => {
   const adminId = req.headers['x-user-id'] as string;
+  const adminEmail = req.headers['x-user-email'] as string;
   const { published } = req.body;
+
+  // Only check subscription when trying to publish (not when unpublishing)
+  if (published) {
+    try {
+      const platformUrl = process.env.PLATFORM_SERVICE_URL || 'http://platform-service:3002';
+      const subRes = await fetch(`${platformUrl}/subscription-status`, {
+        headers: { 'x-user-email': adminEmail },
+      });
+      if (subRes.ok) {
+        const subData = await subRes.json() as { expired: boolean };
+        if (subData.expired) {
+          res.status(403).json({ error: 'Subscription required to publish your store' });
+          return;
+        }
+      }
+    } catch { /* if platform is unreachable, allow publish */ }
+  }
+
   const store = await prisma.store.update({ where: { adminId }, data: { published: Boolean(published) } });
   res.json({ store });
 });

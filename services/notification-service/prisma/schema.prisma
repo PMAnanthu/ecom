@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["notif_svc"]
+}
+
+model NotificationConfig {
+  id        String   @id @default(uuid())
+  storeId   String   @unique
+  // Email (SMTP)
+  smtpHost     String?
+  smtpPort     Int?
+  smtpUser     String?
+  smtpPassword String?
+  smtpFrom     String?
+  emailEnabled Boolean @default(false)
+  // WhatsApp (Twilio or Meta Cloud API)
+  waProvider   WaProvider?
+  waApiKey     String?
+  waPhoneId    String?
+  waEnabled    Boolean @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@schema("notif_svc")
+}
+
+model NotificationLog {
+  id        String           @id @default(uuid())
+  storeId   String
+  channel   NotifChannel
+  event     String
+  recipient String
+  status    NotifStatus      @default(PENDING)
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@schema("notif_svc")
+}
+
+enum WaProvider {
+  TWILIO
+  META
+  @@schema("notif_svc")
+}
+
+enum NotifChannel {
+  EMAIL
+  WHATSAPP
+  @@schema("notif_svc")
+}
+
+enum NotifStatus {
+  PENDING
+  SENT
+  FAILED
+  @@schema("notif_svc")
+}

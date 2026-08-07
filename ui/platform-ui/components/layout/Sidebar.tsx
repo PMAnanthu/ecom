@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { Separator } from '@/components/ui/separator';
 import {
   LayoutDashboard, Globe, Settings, Users, CreditCard,
-  LayoutTemplate, LogOut, ShoppingBag, ShieldCheck,
+  LayoutTemplate, LogOut, ShoppingBag, ShieldCheck, Bell,
 } from 'lucide-react';
 
 const superAdminLinks = [
@@ -16,6 +16,7 @@ const superAdminLinks = [
   { href: '/super/customers', label: 'Customer', icon: ShoppingBag },
   { href: '/super/templates', label: 'Templates', icon: LayoutTemplate },
   { href: '/super/subscriptions', label: 'Subscription', icon: CreditCard },
+  { href: '/super/notifications', label: 'Notifications', icon: Bell },
   { href: '/super/settings', label: 'Settings', icon: Settings },
 ];
 
