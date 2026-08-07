@@ -71,11 +71,12 @@ function StoreRow({ s, adminEmail, togglingLive, onToggleLive, onEdit }: {
   );
 }
 
-function StoreModal({ modal, form, setForm, admins, loading, error, onSave, onClose }: {
+function StoreModal({ modal, form, setForm, admins, stores, loading, error, onSave, onClose }: {
   readonly modal: Modal;
   readonly form: typeof emptyForm;
   readonly setForm: (f: typeof emptyForm) => void;
   readonly admins: Admin[];
+  readonly stores: StoreRow[];
   readonly loading: boolean;
   readonly error: string;
   readonly onSave: (e: React.SyntheticEvent<HTMLFormElement>) => void;
@@ -104,20 +105,17 @@ function StoreModal({ modal, form, setForm, admins, loading, error, onSave, onCl
               </div>
               {modal.type === 'create' && (
                 <>
-                  <div className="space-y-1">
-                    <Label>Subdomain</Label>
-                    <div className="flex items-center gap-1">
-                      <Input placeholder="mystore" value={form.subdomain}
-                        onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} required />
-                      <span className="text-xs text-neutral-400 whitespace-nowrap">.ecom.app</span>
-                    </div>
+                  <div className="space-y-1 col-span-2">
+                    <Label>Subdomain <span className="text-neutral-400 text-xs">(unique store identifier)</span></Label>
+                    <Input placeholder="mystore" value={form.subdomain}
+                      onChange={e => setForm({ ...form, subdomain: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })} required />
                   </div>
-                  <div className="space-y-1">
-                    <Label>Assign Admin</Label>
+                  <div className="space-y-1 col-span-2">
+                    <Label>Assign Admin <span className="text-neutral-400 text-xs">(unassigned only)</span></Label>
                     <select value={form.adminId} onChange={e => setForm({ ...form, adminId: e.target.value })} required
                       className="w-full h-9 rounded-md border border-neutral-200 px-3 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-black">
                       <option value="">Select admin…</option>
-                      {admins.map(a => <option key={a.id} value={a.id}>{a.email}</option>)}
+                      {admins.filter(a => !stores.some(s => s.adminId === a.id)).map(a => <option key={a.id} value={a.id}>{a.email}</option>)}
                     </select>
                   </div>
                 </>
@@ -252,7 +250,7 @@ export default function SuperStoresPage() {
         </table>
       </div>
 
-      <StoreModal modal={modal} form={form} setForm={setForm} admins={admins}
+      <StoreModal modal={modal} form={form} setForm={setForm} admins={admins} stores={stores}
         loading={loading} error={error} onSave={save} onClose={close} />
     </div>
   );
