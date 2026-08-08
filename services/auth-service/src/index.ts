@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { authRouter } from './routes/auth';
 import { addressRouter } from './routes/address';
 import { adminMgmtRouter } from './routes/admin-mgmt';
+import { firebaseAuthRouter } from './routes/firebase-auth';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -29,6 +30,7 @@ app.use('/', authRouter);
 app.use('/addresses', addressRouter);
 app.use('/user/addresses', addressRouter);
 app.use('/admin-mgmt', adminMgmtRouter);
+app.use('/firebase', firebaseAuthRouter);
 
 app.listen(PORT, () => {
   console.log(`auth-service running on port ${PORT}`);

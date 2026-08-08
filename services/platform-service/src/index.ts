@@ -6,6 +6,7 @@ import { subscriptionRouter } from './routes/subscription';
 import { subscriptionLifecycleRouter } from './routes/subscription-lifecycle';
 import { analyticsRouter } from './routes/analytics';
 import { templateRouter } from './routes/template';
+import { platformConfigRouter } from './routes/platformConfig';
 
 const app = express();
 const prisma = new PrismaClient();
@@ -56,6 +57,7 @@ app.use('/subscriptions', subscriptionRouter);
 app.use('/manage', subscriptionLifecycleRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/templates', templateRouter);
+app.use('/platform-config', platformConfigRouter);
 
 app.listen(PORT, () => {
   console.log(`platform-service running on port ${PORT}`);

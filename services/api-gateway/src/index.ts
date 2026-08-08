@@ -88,6 +88,9 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', service: 'api-gateway
 
 // Using app.all with wildcard keeps req.url = full path, so our rewrite works correctly
 
+// Firebase auth — public (exchange Firebase ID token for our JWT)
+app.post('/api/auth/firebase', forward(AUTH_URL, 'auth'));
+
 // Admin management (super-admin only) — protected before public /api/auth/*
 app.all('/api/auth/admin-mgmt', ...mw(authenticate, requireRole('SUPERADMIN')), forward(AUTH_URL, 'auth'));
 app.all('/api/auth/admin-mgmt/*', ...mw(authenticate, requireRole('SUPERADMIN')), forward(AUTH_URL, 'auth'));
@@ -112,6 +115,10 @@ app.get('/api/catalog/products', forward(CATALOG_URL, 'catalog'));
 app.get('/api/catalog/products/*', forward(CATALOG_URL, 'catalog'));
 app.get('/api/catalog/categories', forward(CATALOG_URL, 'catalog'));
 app.get('/api/catalog/categories/*', forward(CATALOG_URL, 'catalog'));
+
+// Platform config — public GET (Firebase config for storefront), PATCH = super-admin
+app.get('/api/platform/platform-config', forward(PLATFORM_URL, 'platform'));
+app.patch('/api/platform/platform-config', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PLATFORM_URL, 'platform'));
 
 // Public: templates list (admin picker needs it)
 app.get('/api/platform/templates', forward(PLATFORM_URL, 'platform'));

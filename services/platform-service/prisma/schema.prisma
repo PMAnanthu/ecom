@@ -53,6 +53,13 @@ model StoreTemplate {
   @@schema("platform_svc")
 }
 
+model PlatformConfig {
+  id        String   @id @default("singleton")
+  data      Json     @default("{}")
+  updatedAt DateTime @updatedAt
+  @@schema("platform_svc")
+}
+
 enum AdminStatus {
   ACTIVE
   SUSPENDED
