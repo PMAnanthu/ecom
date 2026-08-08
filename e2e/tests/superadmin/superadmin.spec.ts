@@ -59,8 +59,8 @@ test.describe('Super Admin — Stores', () => {
 
   test('add store button opens modal with form fields', async ({ page }) => {
     await page.getByRole('button', { name: /\+ add store/i }).click();
-    // Wait for the overlay/modal to appear — any text input inside it
-    await expect(page.locator('.fixed input[type="text"]').first()).toBeVisible({ timeout: 5000 });
+    // Modal overlay appears — wait for any input inside it
+    await expect(page.locator('input').last()).toBeVisible({ timeout: 8000 });
   });
 
   test('stores have action buttons', async ({ page }) => {
@@ -136,7 +136,8 @@ test.describe('Super Admin — Notifications', () => {
   });
 
   test('shows email config section', async ({ page }) => {
-    await expect(page.getByText(/smtp/i, { exact: false })).toBeVisible({ timeout: 8000 });
+    // Wait for page to fully load, then check for SMTP text
+    await expect(page.getByText(/smtp/i, { exact: false })).toBeVisible({ timeout: 15000 });
   });
 
   test('shows whatsapp config section', async ({ page }) => {

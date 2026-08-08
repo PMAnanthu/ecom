@@ -17,7 +17,7 @@ async function loginAsAdmin(page: Page) {
 test.describe('Admin — Login', () => {
   test('admin login succeeds and redirects to /dashboard', async ({ page }) => {
     await loginAsAdmin(page);
-    await expect(page.locator('[data-slot="card"]').first().or(page.locator('main'))).toBeVisible();
+    await expect(page.getByRole('main')).toBeVisible();
   });
 
   test('non-admin login shows access denied on admin-ui', async ({ page }) => {
@@ -49,14 +49,17 @@ test.describe('Admin — Catalog', () => {
   test('add product opens form', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
     await expect(page.getByText(/new product/i)).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('input[type="text"]').first()).toBeVisible();
+    // shadcn Input renders without explicit type — match any input
+    await expect(page.locator('input').first()).toBeVisible();
   });
 
   test('create a product', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
     await expect(page.getByText(/new product/i)).toBeVisible({ timeout: 5000 });
     const productName = `Test Product ${Date.now()}`;
-    await page.locator('input[type="text"]').first().fill(productName);
+    // Name field is first input in the form
+    await page.locator('input').first().fill(productName);
+    // Price and Stock are number inputs
     await page.locator('input[type="number"]').nth(0).fill('49.99');
     await page.locator('input[type="number"]').nth(1).fill('10');
     await page.getByRole('button', { name: /save product/i }).click();
@@ -121,7 +124,7 @@ test.describe('Admin — Shop Settings', () => {
 
   test('shows settings page with store name field', async ({ page }) => {
     await expect(page.getByText('Shop Settings')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('input[type="text"]').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('currency selector shows currency options', async ({ page }) => {
