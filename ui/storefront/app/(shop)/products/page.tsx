@@ -188,14 +188,19 @@ export default function ProductsPage() {
 
   // Sync URL params → state on mount and param changes
   useEffect(() => {
-    const cat = searchParams.get('category') || '';
+    const catParam = searchParams.get('category') || '';
     const s = searchParams.get('search') || '';
     const srt = searchParams.get('sort') || 'newest';
-    if (cat !== category) setCategory(cat);
+    // category param is now a name — find ID from tree or pass name directly (backend handles both)
+    const allCats = tree.flatMap(function flatten(c): typeof tree {
+      return [c, ...(c.children?.flatMap(flatten) ?? [])];
+    });
+    const catId = catParam ? (allCats.find(c => c.name.toLowerCase() === catParam.toLowerCase())?.id || catParam) : '';
+    if (catId !== category) setCategory(catId);
     if (s !== search) setSearch(s);
     if (srt !== sort) setSort(srt);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, tree]);
 
   // Update URL when filters change
   const updateUrl = (key: string, value: string) => {
@@ -204,7 +209,16 @@ export default function ProductsPage() {
     router.replace(`${base}/products?${params.toString()}`, { scroll: false });
   };
 
-  const handleSetCategory = (v: string) => { setCategory(v); updateUrl('category', v); };
+  const handleSetCategory = (idOrName: string) => {
+    // Find the category name from tree to use in URL (human-readable)
+    const allCats = tree.flatMap(function flatten(c): typeof tree {
+      return [c, ...(c.children?.flatMap(flatten) ?? [])];
+    });
+    const cat = allCats.find(c => c.id === idOrName || c.name === idOrName);
+    const nameForUrl = cat?.name || idOrName;
+    setCategory(idOrName);
+    updateUrl('category', nameForUrl);
+  };
   const handleSetSearch = (v: string) => { setSearch(v); updateUrl('search', v); };
   const handleSetSort = (v: string) => { setSort(v); updateUrl('sort', v); };
 

@@ -195,7 +195,7 @@ function CategorySection({ categories, style, base, accent, products, sizeConfig
       {categories.map(c => {
         const img = categoryImage(c.id);
         return (
-          <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
+          <Link key={c.id} href={`${base}/products?category=${encodeURIComponent(c.name)}`} className="flex flex-col items-center gap-2 group">
             <div className={`${sz.circle} rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0`}
               style={{ backgroundColor: accent || '#6366f1' }}>
               {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -212,7 +212,7 @@ function CategorySection({ categories, style, base, accent, products, sizeConfig
       {categories.map(c => {
         const img = categoryImage(c.id);
         return (
-          <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
+          <Link key={c.id} href={`${base}/products?category=${encodeURIComponent(c.name)}`} className="flex flex-col items-center gap-2 group">
             <div className={`${sz.rect} rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0`}
               style={{ backgroundColor: accent || '#6366f1' }}>
               {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
@@ -229,7 +229,7 @@ function CategorySection({ categories, style, base, accent, products, sizeConfig
       {categories.map(c => {
         const img = categoryImage(c.id);
         return (
-          <Link key={c.id} href={`${base}/products?category=${c.id}`}
+          <Link key={c.id} href={`${base}/products?category=${encodeURIComponent(c.name)}`}
             className="rounded-2xl overflow-hidden border hover:shadow-md transition-shadow flex flex-col"
             style={{ backgroundColor: accent ? `${accent}20` : '#f5f5f5' }}>
             <div className="aspect-[4/3] bg-neutral-100 overflow-hidden flex items-center justify-center text-3xl font-bold text-white"
@@ -312,9 +312,9 @@ function isTruthy(val: unknown): boolean {
 }
 
 function sectionAlign(align: unknown): string {
-  if (align === 'center') return 'text-center items-center';
-  if (align === 'right') return 'text-right items-end';
-  return 'text-left items-start';
+  if (align === 'center') return 'text-center';
+  if (align === 'right') return 'text-right';
+  return 'text-left';
 }
 
 function sectionItemSize(size: unknown): { card: string; circle: string; rect: string } {

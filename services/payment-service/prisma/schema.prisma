@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["payment_svc"]
+}
+
+// Global Razorpay config for subscription payments (super-admin sets this)
+model PlatformPaymentConfig {
+  id            String  @id @default("global")
+  razorpayKeyId    String?
+  razorpayKeySecret String?
+  enabled       Boolean @default(false)
+  updatedAt     DateTime @updatedAt
+
+  @@schema("payment_svc")
+}
+
+// Per-store Razorpay config for product payments (store admin sets this)
+model StorePaymentConfig {
+  id            String  @id @default(uuid())
+  storeId       String  @unique
+  razorpayKeyId    String?
+  razorpayKeySecret String?
+  enabled       Boolean @default(false)
+  updatedAt     DateTime @updatedAt
+
+  @@schema("payment_svc")
+}
+
+model PaymentOrder {
+  id              String        @id @default(uuid())
+  razorpayOrderId String        @unique
+  amount          Int           // paise
+  currency        String        @default("INR")
+  type            PaymentType
+  referenceId     String        // orderId or subscriptionId
+  storeId         String?
+  userId          String?
+  status          PaymentStatus @default(CREATED)
+  razorpayPaymentId String?
+  razorpaySignature String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@schema("payment_svc")
+}
+
+enum PaymentType {
+  PRODUCT
+  SUBSCRIPTION
+  @@schema("payment_svc")
+}
+
+enum PaymentStatus {
+  CREATED
+  PAID
+  FAILED
+  @@schema("payment_svc")
+}

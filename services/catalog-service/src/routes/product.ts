@@ -38,15 +38,25 @@ productRouter.get('/', async (req: Request, res: Response) => {
   if (tag) where.tags = { has: tag as string };
 
   if (category) {
-    // Include the category and all its descendants
     const allCats = await prisma.category.findMany({ where: storeId ? { storeId } : {} });
-    const ids = new Set<string>();
-    const addWithChildren = (id: string) => {
-      ids.add(id);
-      allCats.filter(c => c.parentId === id).forEach(c => addWithChildren(c.id));
-    };
-    addWithChildren(category as string);
-    where.categoryId = { in: [...ids] };
+    // Support both UUID and category name/slug
+    const isUuid = /^[0-9a-f-]{36}$/.test(category as string);
+    let rootId: string | undefined;
+    if (isUuid) {
+      rootId = allCats.find(c => c.id === category)?.id;
+    } else {
+      // Match by name (case-insensitive)
+      rootId = allCats.find(c => c.name.toLowerCase() === (category as string).toLowerCase())?.id;
+    }
+    if (rootId) {
+      const ids = new Set<string>();
+      const addWithChildren = (id: string) => {
+        ids.add(id);
+        allCats.filter(c => c.parentId === id).forEach(c => addWithChildren(c.id));
+      };
+      addWithChildren(rootId);
+      where.categoryId = { in: [...ids] };
+    }
   }
 
   let orderBy: Record<string, string> = { createdAt: 'desc' };
