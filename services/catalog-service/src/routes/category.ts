@@ -10,14 +10,17 @@ const schema = z.object({
   parentId: z.string().optional().nullable(),
 });
 
-// Build a nested tree from flat list
-function buildTree(cats: { id: string; name: string; parentId: string | null; storeId: string; createdAt: Date }[]) {
-  const map = new Map<string, { id: string; name: string; parentId: string | null; children: unknown[] }>();
-  cats.forEach(c => map.set(c.id, { ...c, children: [] }));
-  const roots: unknown[] = [];
+type CatRow = { id: string; name: string; parentId: string | null; storeId: string; createdAt: Date; _count: { products: number } };
+type CatNode = { id: string; name: string; parentId: string | null; _count: { products: number }; children: CatNode[] };
+
+// Build a nested tree from flat list, preserving _count
+function buildTree(cats: CatRow[]): CatNode[] {
+  const map = new Map<string, CatNode>();
+  cats.forEach(c => map.set(c.id, { id: c.id, name: c.name, parentId: c.parentId, _count: c._count, children: [] }));
+  const roots: CatNode[] = [];
   map.forEach(c => {
     if (c.parentId && map.has(c.parentId)) {
-      (map.get(c.parentId)!.children as unknown[]).push(c);
+      map.get(c.parentId)!.children.push(c);
     } else {
       roots.push(c);
     }

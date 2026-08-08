@@ -105,10 +105,10 @@ function CategoryPills({ tree, category, setCategory, accent = 'black' }: Readon
         className={`px-3 py-1 rounded-full text-sm border transition-all ${!category ? activeCls : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-400'}`}>
         All
       </button>
-      {flatWithDepth.map(({ id, label, depth }) => (
+      {flatWithDepth.map(({ id, label }) => (
         <button key={id} type="button" onClick={() => setCategory(id)}
           className={`px-3 py-1 rounded-full text-sm border transition-all ${category === id ? activeCls : 'bg-white border-neutral-200 text-neutral-600 hover:border-neutral-400'}`}>
-          {depth > 0 ? `${'·'.repeat(depth)} ${label}` : label}
+          {label}
         </button>
       ))}
     </div>

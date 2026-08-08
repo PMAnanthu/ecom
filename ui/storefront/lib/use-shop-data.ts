@@ -22,6 +22,20 @@ export interface Category {
   _count?: { products: number };
 }
 
+// Recursively count total products in a node (own + all descendants)
+function totalProducts(node: Category): number {
+  const own = node._count?.products ?? 0;
+  const childTotal = (node.children ?? []).reduce((sum, c) => sum + totalProducts(c), 0);
+  return own + childTotal;
+}
+
+// Remove categories that have no products themselves and no children with products
+function filterEmptyCategories(nodes: Category[]): Category[] {
+  return nodes
+    .map(node => ({ ...node, children: filterEmptyCategories(node.children ?? []) }))
+    .filter(node => totalProducts(node) > 0);
+}
+
 const PAGE_SIZE = 16;
 
 export function useShopData() {
@@ -45,7 +59,7 @@ export function useShopData() {
     api.get('/catalog/categories', { headers: { 'x-store-id': storeId } })
       .then((r) => {
         setCategories(r.data.categories);
-        setTree(r.data.tree || []);
+        setTree(filterEmptyCategories(r.data.tree || []));
       })
       .finally(() => setLoading(false));
   }, [storeId]);
