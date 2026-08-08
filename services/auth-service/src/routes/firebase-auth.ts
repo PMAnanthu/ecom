@@ -62,7 +62,7 @@ firebaseAuthRouter.post('/', async (req: Request, res: Response) => {
 
   const { signAccessToken, signRefreshToken } = await import('../lib/jwt');
   const accessToken = signAccessToken({ userId: user.id, email: user.email, role: user.role, storeId: user.storeId ?? null });
-  const refreshToken = signRefreshToken({ userId: user.id });
+  const refreshToken = signRefreshToken({ userId: user.id, email: user.email, role: user.role, storeId: user.storeId ?? null });
 
   res.json({ user: { id: user.id, email: user.email, role: user.role, storeId: user.storeId }, accessToken, refreshToken });
 });

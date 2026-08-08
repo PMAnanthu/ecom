@@ -342,8 +342,6 @@ export default function CustomizePage() {
           onDescriptionChange={v => setConfig(c => ({ ...c, categoriesDescription: v }))}
           size={config.categoriesSize}
           onSizeChange={v => setConfig(c => ({ ...c, categoriesSize: v }))}
-          onSave={saveSections}
-          saving={saving}>
           <p className="text-xs text-neutral-400">All your store categories will be shown here.</p>
         </SectionPanel>
 
@@ -359,8 +357,6 @@ export default function CustomizePage() {
           onDescriptionChange={v => setConfig(c => ({ ...c, newArrivalsDescription: v }))}
           size={config.newArrivalsSize}
           onSizeChange={v => setConfig(c => ({ ...c, newArrivalsSize: v }))}
-          onSave={saveSections}
-          saving={saving}>
           <ProductPicker label="Select products" products={products} selected={config.newArrivalIds} onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))} />
         </SectionPanel>
 
@@ -376,8 +372,6 @@ export default function CustomizePage() {
           onDescriptionChange={v => setConfig(c => ({ ...c, featuredDescription: v }))}
           size={config.featuredSize}
           onSizeChange={v => setConfig(c => ({ ...c, featuredSize: v }))}
-          onSave={saveSections}
-          saving={saving}>
           <ProductPicker label="Select products" products={products} selected={config.featuredIds} onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))} />
         </SectionPanel>
 
@@ -390,13 +384,13 @@ export default function CustomizePage() {
   );
 }
 
-function SectionPanel({ title, enabled, onToggle, style, onStyleChange, align, onAlignChange, description, onDescriptionChange, size, onSizeChange, onSave, saving, children }: Readonly<{
+function SectionPanel({ title, enabled, onToggle, style, onStyleChange, align, onAlignChange, description, onDescriptionChange, size, onSizeChange, children }: Readonly<{
   title: string; enabled: boolean; onToggle: (v: boolean) => void;
   style: string; onStyleChange: (v: string) => void;
   align: string; onAlignChange: (v: string) => void;
   description: string; onDescriptionChange: (v: string) => void;
   size: string; onSizeChange: (v: string) => void;
-  onSave: () => void; saving: boolean; children?: React.ReactNode;
+  children?: React.ReactNode;
 }>) {
   return (
     <Card>
@@ -447,7 +441,6 @@ function SectionPanel({ title, enabled, onToggle, style, onStyleChange, align, o
             <Textarea placeholder="Add a section description…" rows={2} value={description} onChange={e => onDescriptionChange(e.target.value)} />
           </div>
           {children}
-          <Button size="sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
         </CardContent>
       )}
     </Card>

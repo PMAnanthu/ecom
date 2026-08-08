@@ -362,8 +362,8 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
     const isCenter = align === 'center';
     const isRight = align === 'right';
     let contentCls = '';
-    if (isCenter) contentCls = 'flex justify-center';
-    else if (isRight) contentCls = 'flex justify-end';
+    if (isCenter) contentCls = 'mx-auto';
+    else if (isRight) contentCls = 'ml-auto mr-0';
     return (
       <section className="w-full px-4 py-8 max-w-7xl mx-auto">
         <div className={`mb-5 ${textAlign}`}>
