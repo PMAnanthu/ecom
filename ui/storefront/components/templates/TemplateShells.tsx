@@ -83,7 +83,47 @@ function useNavBranding() {
   };
 }
 
-// ─── MOBILE MENU ─────────────────────────────────────────────────────────────
+function useFooterBranding() {
+  const { store } = useStorefrontStore();
+  const b = (store?.branding || {}) as Record<string, unknown>;
+  return {
+    bg: (b.footerBg as string) || '#111827',
+    text: (b.footerText as string) || '#9ca3af',
+    copyright: (b.footerCopyright as string) || '',
+    showLinks: b.footerShowLinks !== false,
+    storeName: store?.name || '',
+  };
+}
+
+function StorefrontFooter() {
+  const footer = useFooterBranding();
+  const nav = useNavBranding();
+  const base = useStorePath();
+  const links = useNavLinks(nav.navLinks);
+  const year = new Date().getFullYear();
+
+  return (
+    <footer style={{ backgroundColor: footer.bg, color: footer.text }}>
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+          <div>
+            <p className="font-bold text-lg mb-1" style={{ color: footer.text }}>{footer.storeName}</p>
+            <p className="text-sm opacity-70">{footer.copyright || `© ${year} ${footer.storeName}. All rights reserved.`}</p>
+          </div>
+          {footer.showLinks && (
+            <nav className="flex flex-wrap gap-x-6 gap-y-2">
+              {links.map(l => (
+                <Link key={l.href} href={l.href} className="text-sm hover:opacity-100 opacity-70 transition-opacity">
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          )}
+        </div>
+      </div>
+    </footer>
+  );
+}
 function MobileMenu({ open, onClose, links, cartCount, user, onLogout, nav }: Readonly<{
   open: boolean; onClose: () => void;
   links: { href: string; label: string }[];
@@ -204,6 +244,7 @@ export function SidebarShell({ children, sidebarContent }: Readonly<SidebarShell
         </header>
         <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
         <main className="flex-1 p-4 lg:p-8">{children}</main>
+        <StorefrontFooter />
       </div>
     </div>
   );
@@ -268,6 +309,7 @@ export function TopnavShell({ children }: Readonly<{ children: ReactNode }>) {
       </header>
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
       <main>{children}</main>
+      <StorefrontFooter />
     </div>
   );
 }
@@ -333,6 +375,7 @@ export function CardShell({ children }: Readonly<{ children: ReactNode }>) {
       </header>
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
       <main>{children}</main>
+      <StorefrontFooter />
     </div>
   );
 }

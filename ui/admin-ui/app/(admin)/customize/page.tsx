@@ -60,6 +60,11 @@ interface HomeConfig {
   featuredDescription: string;
   featuredSize: string;
   featuredIds: string[];
+  // Footer
+  footerBg: string;
+  footerText: string;
+  footerCopyright: string;
+  footerShowLinks: boolean;
 }
 
 const defaultConfig: HomeConfig = {
@@ -88,6 +93,10 @@ const defaultConfig: HomeConfig = {
   featuredDescription: '',
   featuredSize: 'md',
   featuredIds: [],
+  footerBg: '#111827',
+  footerText: '#9ca3af',
+  footerCopyright: '',
+  footerShowLinks: true,
 };
 
 interface Product { id: string; name: string; images: string[] }
@@ -145,6 +154,10 @@ export default function CustomizePage() {
       featuredDescription: b.featuredDescription || '',
       featuredSize: b.featuredSize || 'md',
       featuredIds: b.featuredIds || [],
+      footerBg: b.footerBg || '#111827',
+      footerText: b.footerText || '#9ca3af',
+      footerCopyright: b.footerCopyright || '',
+      footerShowLinks: b.footerShowLinks !== false,
     };
     setConfig(loaded);
     setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
@@ -375,6 +388,51 @@ export default function CustomizePage() {
           onSizeChange={v => setConfig(c => ({ ...c, featuredSize: v }))}>
           <ProductPicker label="Select products" products={products} selected={config.featuredIds} onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))} />
         </SectionPanel>
+
+        {/* Footer */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Footer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Background Color</Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={config.footerBg}
+                    onChange={e => setConfig(c => ({ ...c, footerBg: e.target.value }))}
+                    className="w-10 h-8 rounded border cursor-pointer" />
+                  <Input value={config.footerBg}
+                    onChange={e => setConfig(c => ({ ...c, footerBg: e.target.value }))}
+                    className="text-xs h-8 font-mono" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Text Color</Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={config.footerText}
+                    onChange={e => setConfig(c => ({ ...c, footerText: e.target.value }))}
+                    className="w-10 h-8 rounded border cursor-pointer" />
+                  <Input value={config.footerText}
+                    onChange={e => setConfig(c => ({ ...c, footerText: e.target.value }))}
+                    className="text-xs h-8 font-mono" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Copyright Text <span className="text-neutral-400">(leave blank to auto-generate)</span></Label>
+              <Input placeholder="© 2026 Your Store. All rights reserved."
+                value={config.footerCopyright}
+                onChange={e => setConfig(c => ({ ...c, footerCopyright: e.target.value }))} />
+            </div>
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={config.footerShowLinks}
+                onChange={e => setConfig(c => ({ ...c, footerShowLinks: e.target.checked }))}
+                className="accent-black w-4 h-4" />
+              <span>Show navigation links in footer</span>
+            </label>
+          </CardContent>
+        </Card>
 
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
         <Button type="submit" disabled={saving} className="w-full">
