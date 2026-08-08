@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useTemplate } from '@/lib/template-context';
+import { useTemplate, useCurrency } from '@/lib/template-context';
 import { useShopData, type Category } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
@@ -155,6 +155,7 @@ function MobileFilterDrawer({ open, onClose, tree, category, setCategory, sort, 
 // ─── Card product ─────────────────────────────────────────────────────────────
 function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['products'][0]; base: string }>) {
   const { addItem } = useCartStore();
+  const { symbol } = useCurrency();
   return (
     <div className="bg-white rounded-2xl shadow hover:shadow-lg transition-shadow overflow-hidden flex flex-col">
       <a href={`${base}/products/${p.id}`} className="block aspect-[4/3] bg-neutral-100 overflow-hidden">
@@ -167,7 +168,7 @@ function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['
         <a href={`${base}/products/${p.id}`}><h3 className="font-semibold hover:underline line-clamp-1">{p.name}</h3></a>
         {p.description && <p className="text-sm text-neutral-500 line-clamp-2">{p.description}</p>}
         <div className="flex items-center justify-between mt-auto pt-2 border-t">
-          <span className="font-bold text-lg">${p.price.toFixed(2)}</span>
+          <span className="font-bold text-lg">{symbol}{p.price.toFixed(2)}</span>
           {p.stock > 0
             ? <button type="button" onClick={() => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 })} className="bg-black text-white text-sm px-4 py-1.5 rounded-full hover:bg-neutral-800">Add</button>
             : <span className="text-xs text-neutral-400">Out of stock</span>}
