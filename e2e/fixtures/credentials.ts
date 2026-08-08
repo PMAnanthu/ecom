@@ -1,21 +1,23 @@
-// Central test credentials and URLs — override with env vars in CI
+// All credentials must be set via environment variables or a .env file.
+// See e2e/.env.example for the full list.
 export const CREDENTIALS = {
   superadmin: {
-    email: process.env.SUPERADMIN_EMAIL || 'superadmin@ecom.app',
-    password: process.env.SUPERADMIN_PASSWORD || 'superadmin123',
+    email: process.env.SUPERADMIN_EMAIL ?? '',
+    password: process.env.SUPERADMIN_PASSWORD ?? '',
   },
   admin: {
-    email: process.env.ADMIN_EMAIL || 'admin@teststore.com',
-    password: process.env.ADMIN_PASSWORD || 'admin123456',
+    email: process.env.ADMIN_EMAIL ?? '',
+    password: process.env.ADMIN_PASSWORD ?? '',
   },
   customer: {
-    email: process.env.CUSTOMER_EMAIL || 'customer@test.com',
-    password: process.env.CUSTOMER_PASSWORD || 'customer123',
+    email: process.env.CUSTOMER_EMAIL ?? '',
+    password: process.env.CUSTOMER_PASSWORD ?? '',
   },
 };
 
 export const URLS = {
-  platform: process.env.PLATFORM_URL || 'http://localhost:3000',
-  admin: process.env.ADMIN_URL || 'http://localhost:3001',
-  storefront: process.env.STOREFRONT_URL || 'http://localhost:3002',
+  platform: process.env.PLATFORM_URL || 'https://ecom-platform-ui-496160804659.us-east1.run.app',
+  admin: process.env.ADMIN_URL || 'https://ecom-admin-ui-496160804659.us-east1.run.app',
+  storefront: process.env.STOREFRONT_URL || 'https://ecom-storefront-m6jmogmpra-ue.a.run.app',
 };
+

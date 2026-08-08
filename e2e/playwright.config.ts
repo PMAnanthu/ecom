@@ -1,4 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// Load .env from e2e/ directory
+try {
+  const envPath = path.resolve(__dirname, '.env');
+  const content = fs.readFileSync(envPath, 'utf-8');
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const [key, ...rest] = trimmed.split('=');
+    if (key && !(key in process.env)) process.env[key.trim()] = rest.join('=').trim();
+  }
+} catch { /* .env optional */ }
 
 export default defineConfig({
   testDir: './tests',
