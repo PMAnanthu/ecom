@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { Redis } from 'ioredis';
 import { z } from 'zod';
+import { getCustomerInfo, publishOrderEvent } from '../lib/events';
 
 const prisma = new PrismaClient();
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
@@ -64,6 +65,21 @@ orderRouter.post('/checkout', async (req: Request, res: Response) => {
 
   // Clear Redis cart if it exists
   await redis.del(`cart:${userId}`);
+
+  // Fire ORDER_PLACED notification (non-blocking)
+  const customer = await getCustomerInfo(userId);
+  if (customer) {
+    publishOrderEvent({
+      event: 'ORDER_PLACED',
+      orderId: order.id,
+      storeId: parsed.data.storeId,
+      customerEmail: customer.email,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      total: order.total,
+    });
+  }
+
   res.status(201).json({ order });
 });
 
@@ -92,5 +108,22 @@ orderRouter.patch('/:id/status', async (req: Request, res: Response) => {
   if (!valid.includes(status)) { res.status(400).json({ error: 'Invalid status' }); return; }
 
   const order = await prisma.order.update({ where: { id: req.params.id }, data: { status } });
+
+  // Fire status notification (non-blocking)
+  const customer = await getCustomerInfo(order.userId);
+  if (customer) {
+    const event = status === 'CANCELLED' ? 'ORDER_CANCELLED' : 'ORDER_STATUS_UPDATED';
+    publishOrderEvent({
+      event,
+      orderId: order.id,
+      storeId: order.storeId,
+      customerEmail: customer.email,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      status,
+      total: order.total,
+    });
+  }
+
   res.json({ order });
 });

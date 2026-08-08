@@ -111,6 +111,8 @@ services:
       DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
       REDIS_URL: redis://redis:6379
       JWT_SECRET: dev_jwt_secret_change_in_prod
+      AUTH_SERVICE_URL: http://auth-service:3001
+      NOTIFICATION_SERVICE_URL: http://notification-service:3007
     depends_on:
       postgres:
         condition: service_healthy
@@ -136,6 +138,22 @@ services:
       watch:
         - action: sync+restart
           path: ./services/storefront-service/src
+          target: /app/src
+
+  payment-service:
+    build: ./services/payment-service
+    ports:
+      - '3008:3008'
+    environment:
+      PORT: 3008
+      DATABASE_URL: postgresql://ecom:ecom_dev@postgres:5432/ecom
+    depends_on:
+      postgres:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./services/payment-service/src
           target: /app/src
 
   notification-service:
@@ -168,6 +186,7 @@ services:
       ORDER_SERVICE_URL: http://order-service:3005
       STOREFRONT_SERVICE_URL: http://storefront-service:3006
       NOTIFICATION_SERVICE_URL: http://notification-service:3007
+      PAYMENT_SERVICE_URL: http://payment-service:3008
     depends_on:
       - auth-service
       - platform-service
@@ -176,6 +195,7 @@ services:
       - order-service
       - storefront-service
       - notification-service
+      - payment-service
     develop:
       watch:
         - action: sync+restart
