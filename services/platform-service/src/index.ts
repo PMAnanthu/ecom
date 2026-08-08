@@ -59,7 +59,18 @@ app.use('/analytics', analyticsRouter);
 app.use('/templates', templateRouter);
 app.use('/platform-config', platformConfigRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  // Ensure PlatformConfig table exists (created here if DB push wasn't run)
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS platform_svc."PlatformConfig" (
+        id TEXT NOT NULL DEFAULT 'singleton',
+        data JSONB NOT NULL DEFAULT '{}',
+        "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "PlatformConfig_pkey" PRIMARY KEY (id)
+      )
+    `);
+  } catch { /* table already exists */ }
   console.log(`platform-service running on port ${PORT}`);
 });
 

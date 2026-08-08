@@ -5,10 +5,15 @@ export default defineConfig({
   timeout: 30_000,
   retries: 1,
   workers: 2,
-  reporter: [['html', { open: 'never' }], ['list']],
+  reporter: [
+    ['html', { open: 'never' }],
+    ['list'],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['./reporters/pdf-reporter.ts'],
+  ],
   use: {
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
     video: 'retain-on-failure',
   },
   projects: [
