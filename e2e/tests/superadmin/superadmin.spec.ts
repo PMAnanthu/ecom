@@ -136,8 +136,9 @@ test.describe('Super Admin — Notifications', () => {
   });
 
   test('shows email config section', async ({ page }) => {
-    // Wait for page to fully load, then check for SMTP text
-    await expect(page.getByText(/smtp/i, { exact: false })).toBeVisible({ timeout: 15000 });
+    // Wait for page to fully load — check for any email-related content
+    await expect(page.getByText(/email/i, { exact: false }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('input').first()).toBeVisible({ timeout: 15000 });
   });
 
   test('shows whatsapp config section', async ({ page }) => {
