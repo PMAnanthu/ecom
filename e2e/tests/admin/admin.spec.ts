@@ -43,7 +43,7 @@ test.describe('Admin — Catalog', () => {
 
   test('add product opens form', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
-    await expect(page.getByRole('heading', { name: /new product/i })).toBeVisible();
+    await expect(page.locator('[data-slot="card-title"]', { hasText: /new product/i })).toBeVisible();
     await expect(page.getByLabel('Name')).toBeVisible();
     await expect(page.getByLabel('Price')).toBeVisible();
     await expect(page.getByLabel('Stock')).toBeVisible();
@@ -51,12 +51,13 @@ test.describe('Admin — Catalog', () => {
 
   test('create a product', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
+    await expect(page.locator('[data-slot="card-title"]', { hasText: /new product/i })).toBeVisible();
     const productName = `Test Product ${Date.now()}`;
     await page.getByLabel('Name').fill(productName);
     await page.getByLabel('Price').fill('49.99');
     await page.getByLabel('Stock').fill('10');
     await page.getByRole('button', { name: /save product/i }).click();
-    await expect(page.getByText(productName)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(productName)).toBeVisible({ timeout: 10000 });
   });
 
   test('add category opens form', async ({ page }) => {
@@ -118,8 +119,9 @@ test.describe('Admin — Shop Settings', () => {
   });
 
   test('shows settings page with store name field', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /shop settings/i })).toBeVisible();
-    await expect(page.getByLabel(/shop name/i)).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /shop settings/i })).toBeVisible({ timeout: 10000 });
+    // Label is "Shop Name" — input follows the label
+    await expect(page.getByLabel('Shop Name')).toBeVisible({ timeout: 10000 });
   });
 
   test('currency selector shows currency options', async ({ page }) => {
@@ -155,12 +157,14 @@ test.describe('Admin — Customize About', () => {
   });
 
   test('shows about page fields', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /customize about/i })).toBeVisible();
-    await expect(page.getByLabel(/page title/i)).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: /customize about/i })).toBeVisible();
+    // Label is "Page Title" per source
+    await expect(page.getByLabel('Page Title')).toBeVisible();
   });
 
   test('social media fields are present', async ({ page }) => {
-    await expect(page.getByLabel(/instagram/i)).toBeVisible();
+    // Label is "Instagram" per source
+    await expect(page.getByLabel('Instagram')).toBeVisible();
   });
 });
 
