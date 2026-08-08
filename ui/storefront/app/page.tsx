@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTemplate, useCurrency } from '@/lib/template-context';
 import { useShopData } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
@@ -356,7 +356,7 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
 
   const onAdd = (p: SectionProduct) => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 });
 
-  const renderSection = (show: unknown, title: string, description: unknown, align: unknown, size: unknown, content: React.ReactNode) => {
+  const renderSection = (show: unknown, title: string, description: unknown, align: unknown, _size: unknown, content: ReactNode) => {
     if (!isTruthy(show)) return null;
     const alignCls = sectionAlign(align);
     return (

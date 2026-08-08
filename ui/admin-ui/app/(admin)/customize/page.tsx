@@ -171,6 +171,17 @@ export default function CustomizePage() {
   const updateSlide = (i: number, field: keyof Slide, value: string) =>
     setConfig(c => ({ ...c, heroSlides: c.heroSlides.map((s, j) => j === i ? { ...s, [field]: value } : s) }));
 
+  const saveSections = async () => {
+    setSaving(true);
+    try {
+      const storeRes = await api.get('/store');
+      const existing = storeRes.data.store?.branding || {};
+      await api.patch('/store', { branding: { ...existing, ...config } });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } finally { setSaving(false); }
+  };
+
   const save = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
