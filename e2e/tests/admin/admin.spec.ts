@@ -188,6 +188,6 @@ test.describe('Admin — Customize Navbar', () => {
     await page.getByPlaceholder(/path or https/i).fill('/test');
     const addBtn = page.getByRole('button', { name: /^add$/i }).or(page.locator('button[aria-label="Add"]'));
     await addBtn.click();
-    await expect(page.getByDisplayValue('Test Page')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('input[value="Test Page"]').or(page.getByLabel('Test Page'))).toBeVisible({ timeout: 3000 });
   });
 });
