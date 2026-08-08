@@ -358,14 +358,21 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
 
   const makeSection = (show: unknown, title: string, desc: unknown, align: unknown, content: React.JSX.Element | null) => {
     if (!isTruthy(show) || !content) return null;
-    const alignCls = sectionAlign(align);
+    const textAlign = sectionAlign(align);
+    const isCenter = align === 'center';
+    const isRight = align === 'right';
+    let contentCls = '';
+    if (isCenter) contentCls = 'flex justify-center';
+    else if (isRight) contentCls = 'flex justify-end';
     return (
       <section className="w-full px-4 py-8 max-w-7xl mx-auto">
-        <div className={`mb-5 ${alignCls}`}>
+        <div className={`mb-5 ${textAlign}`}>
           <h2 className="text-xl font-bold">{title}</h2>
-          {typeof desc === 'string' && desc && <p className="text-sm text-neutral-500 max-w-lg mt-1">{desc}</p>}
+          {typeof desc === 'string' && desc && <p className="text-sm text-neutral-500 mt-1">{desc}</p>}
         </div>
-        <div className="w-full">{content}</div>
+        <div className={`w-full ${contentCls}`}>
+          <div className="w-full">{content}</div>
+        </div>
       </section>
     );
   };
