@@ -1,21 +1,87 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, ReactNode } from 'react';
+import { useState, useRef, useEffect, ReactNode } from 'react';
 import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { useRouter, usePathname } from 'next/navigation';
 import { useThemeStore } from '@/lib/theme-store';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, User } from 'lucide-react';
 
 function ThemeToggle({ color }: Readonly<{ color?: string }>) {
   const { mode, toggle } = useThemeStore();
   return (
     <button type="button" onClick={toggle} title={mode === 'dark' ? 'Switch to light' : 'Switch to dark'}
-      className="p-1.5 rounded-full transition-colors hover:bg-black/10"
+      className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded hover:bg-black/5 transition-colors"
       style={color ? { color } : {}}>
-      {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+      {mode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+      {mode === 'dark' ? 'Light mode' : 'Dark mode'}
     </button>
+  );
+}
+
+function AvatarDropdown({ user, onLogout, base, showLogin, nav }: Readonly<{
+  user: { email: string } | null;
+  onLogout: () => void;
+  base: string;
+  showLogin: boolean;
+  nav: { textColor?: string; bgColor?: string };
+}>) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    if (open) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  const initial = user?.email?.[0]?.toUpperCase();
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center justify-center w-8 h-8 rounded-full border-2 transition-colors hover:opacity-80"
+        style={{ borderColor: nav.textColor || '#d1d5db', color: nav.textColor || '#374151', backgroundColor: nav.bgColor || 'transparent' }}
+        title="Account"
+      >
+        {initial ? <span className="text-xs font-bold">{initial}</span> : <User size={14} />}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-44 rounded-lg border shadow-lg z-50 overflow-hidden"
+          style={{ backgroundColor: nav.bgColor || '#fff', borderColor: '#e5e7eb' }}>
+          {user && (
+            <div className="px-3 py-2 border-b text-xs truncate opacity-60" style={{ color: nav.textColor, borderColor: '#e5e7eb' }}>
+              {user.email}
+            </div>
+          )}
+          <div className="py-1">
+            <ThemeToggle color={nav.textColor} />
+          </div>
+          {showLogin && (
+            <div className="border-t py-1" style={{ borderColor: '#e5e7eb' }}>
+              {user
+                ? <button onClick={() => { onLogout(); setOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-black/5 transition-colors"
+                    style={{ color: nav.textColor }}>
+                    Sign out
+                  </button>
+                : <Link href={`${base}/login`} onClick={() => setOpen(false)}
+                    className="block px-3 py-2 text-sm hover:bg-black/5 transition-colors"
+                    style={{ color: nav.textColor }}>
+                    Sign in
+                  </Link>
+              }
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -83,47 +149,6 @@ function useNavBranding() {
   };
 }
 
-function useFooterBranding() {
-  const { store } = useStorefrontStore();
-  const b = (store?.branding || {}) as Record<string, unknown>;
-  return {
-    bg: (b.footerBg as string) || '#111827',
-    text: (b.footerText as string) || '#9ca3af',
-    copyright: (b.footerCopyright as string) || '',
-    showLinks: b.footerShowLinks !== false,
-    storeName: store?.name || '',
-  };
-}
-
-function StorefrontFooter() {
-  const footer = useFooterBranding();
-  const nav = useNavBranding();
-  const base = useStorePath();
-  const links = useNavLinks(nav.navLinks);
-  const year = new Date().getFullYear();
-
-  return (
-    <footer style={{ backgroundColor: footer.bg, color: footer.text }}>
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
-          <div>
-            <p className="font-bold text-lg mb-1" style={{ color: footer.text }}>{footer.storeName}</p>
-            <p className="text-sm opacity-70">{footer.copyright || `© ${year} ${footer.storeName}. All rights reserved.`}</p>
-          </div>
-          {footer.showLinks && (
-            <nav className="flex flex-wrap gap-x-6 gap-y-2">
-              {links.map(l => (
-                <Link key={l.href} href={l.href} className="text-sm hover:opacity-100 opacity-70 transition-opacity">
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
-          )}
-        </div>
-      </div>
-    </footer>
-  );
-}
 function MobileMenu({ open, onClose, links, cartCount, user, onLogout, nav }: Readonly<{
   open: boolean; onClose: () => void;
   links: { href: string; label: string }[];
@@ -239,12 +264,12 @@ export function SidebarShell({ children, sidebarContent }: Readonly<SidebarShell
                 {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{cartCount}</span>}
               </Link>
             )}
+            <AvatarDropdown user={user} onLogout={handleLogout} base={base} showLogin={nav.showLogin} nav={nav} />
             <button onClick={() => setMenuOpen(true)} className="text-2xl leading-none px-1" style={textStyle}>☰</button>
           </div>
         </header>
         <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
         <main className="flex-1 p-4 lg:p-8">{children}</main>
-        <StorefrontFooter />
       </div>
     </div>
   );
@@ -282,34 +307,29 @@ export function TopnavShell({ children }: Readonly<{ children: ReactNode }>) {
               </Link>
             ))}
           </nav>
-          <div className="hidden md:flex items-center gap-3 text-sm shrink-0">
-            <ThemeToggle color={nav.textColor} />
-            {nav.showLogin && (user
-              ? <button onClick={handleLogout} className="text-xs hover:opacity-75" style={textStyle}>Logout</button>
-              : <Link href={`${base}/login`} className="hover:opacity-75" style={textStyle}>Sign in</Link>
-            )}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
             {nav.showCart && (
               <Link href={`${base}/cart`} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm hover:opacity-90"
                 style={accentStyle}>
                 🛒 {cartCount > 0 && <span className="bg-white text-black text-xs rounded-full px-1.5 font-bold">{cartCount}</span>}
               </Link>
             )}
+            <AvatarDropdown user={user} onLogout={handleLogout} base={base} showLogin={nav.showLogin} nav={nav} />
           </div>
           <div className="flex md:hidden items-center gap-3 ml-auto">
-            <ThemeToggle color={nav.textColor} />
             {nav.showCart && (
               <Link href={`${base}/cart`} className="relative">
                 <span className="text-xl">🛒</span>
                 {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-black text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">{cartCount}</span>}
               </Link>
             )}
+            <AvatarDropdown user={user} onLogout={handleLogout} base={base} showLogin={nav.showLogin} nav={nav} />
             <button onClick={() => setMenuOpen(true)} className="text-2xl leading-none px-1" style={textStyle}>☰</button>
           </div>
         </div>
       </header>
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
       <main>{children}</main>
-      <StorefrontFooter />
     </div>
   );
 }
@@ -348,18 +368,14 @@ export function CardShell({ children }: Readonly<{ children: ReactNode }>) {
               </Link>
             ))}
           </nav>
-          <div className="hidden md:flex items-center gap-3 text-sm shrink-0">
-            <ThemeToggle color={nav.textColor} />
-            {nav.showLogin && (user
-              ? <button onClick={handleLogout} className="text-xs hover:opacity-75" style={textStyle}>Logout</button>
-              : <Link href={`${base}/login`} className="hover:opacity-75" style={textStyle}>Sign in</Link>
-            )}
+          <div className="hidden md:flex items-center gap-2 shrink-0">
             {nav.showCart && (
               <Link href={`${base}/cart`} className="flex items-center gap-1 px-4 py-1.5 rounded-full hover:opacity-90"
                 style={accentStyle}>
                 🛒 {cartCount > 0 && <span className="bg-white text-xs rounded-full px-1.5 font-bold" style={{ color: nav.accentColor || '#4f46e5' }}>{cartCount}</span>}
               </Link>
             )}
+            <AvatarDropdown user={user} onLogout={handleLogout} base={base} showLogin={nav.showLogin} nav={nav} />
           </div>
           <div className="flex md:hidden items-center gap-3 ml-auto">
             {nav.showCart && (
@@ -369,13 +385,13 @@ export function CardShell({ children }: Readonly<{ children: ReactNode }>) {
                   style={accentStyle}>{cartCount}</span>}
               </Link>
             )}
+            <AvatarDropdown user={user} onLogout={handleLogout} base={base} showLogin={nav.showLogin} nav={nav} />
             <button onClick={() => setMenuOpen(true)} className="text-2xl leading-none px-1" style={textStyle}>☰</button>
           </div>
         </div>
       </header>
       <MobileMenu open={menuOpen} onClose={() => setMenuOpen(false)} links={navLinks} cartCount={cartCount} user={user} onLogout={handleLogout} nav={nav} />
       <main>{children}</main>
-      <StorefrontFooter />
     </div>
   );
 }

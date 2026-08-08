@@ -9,6 +9,7 @@ import { useCartStore } from '@/lib/cart-store';
 import { useStorefrontStore } from '@/lib/storefront-store';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { imgUrl } from '@/components/templates/TemplateShells';
+import { StorefrontFooter } from '@/components/templates/FooterTemplates';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 function useStorePath() {
@@ -432,6 +433,7 @@ export default function HomePage() {
           </div>
         </div>
         {homeSections}
+        <StorefrontFooter />
       </TemplateWrapper>
     );
   }
@@ -441,6 +443,7 @@ export default function HomePage() {
       <TemplateWrapper>
         <HeroSection storeName={storeName} branding={{ ...b, heroStyle: b.heroStyle || 'gradient' }} base={base} />
         {homeSections}
+        <StorefrontFooter />
       </TemplateWrapper>
     );
   }
@@ -450,6 +453,7 @@ export default function HomePage() {
     <TemplateWrapper>
       <HeroSection storeName={storeName} branding={b} base={base} />
       {homeSections}
+      <StorefrontFooter />
     </TemplateWrapper>
   );
 }

@@ -33,6 +33,10 @@ const GRADIENT_OPTIONS = [
 interface Slide { image: string; link: string }
 type DisplayStyle = 'cards' | 'circle' | 'rectangle';
 
+interface FooterLink { label: string; href: string }
+interface FooterLinkGroup { heading: string; links: FooterLink[] }
+interface FooterSocial { label: string; href: string }
+
 interface HomeConfig {
   heroType: 'static' | 'sliding';
   heroHeading: string;
@@ -61,10 +65,15 @@ interface HomeConfig {
   featuredSize: string;
   featuredIds: string[];
   // Footer
+  footerTemplate: 'simple' | 'standard' | 'rich';
   footerBg: string;
   footerText: string;
+  footerAccent: string;
   footerCopyright: string;
+  footerTagline: string;
   footerShowLinks: boolean;
+  footerLinkGroups: FooterLinkGroup[];
+  footerSocials: FooterSocial[];
 }
 
 const defaultConfig: HomeConfig = {
@@ -95,8 +104,13 @@ const defaultConfig: HomeConfig = {
   featuredIds: [],
   footerBg: '#111827',
   footerText: '#9ca3af',
+  footerAccent: '#6366f1',
   footerCopyright: '',
+  footerTagline: '',
   footerShowLinks: true,
+  footerTemplate: 'simple' as const,
+  footerLinkGroups: [],
+  footerSocials: [],
 };
 
 interface Product { id: string; name: string; images: string[] }
@@ -154,10 +168,15 @@ export default function CustomizePage() {
       featuredDescription: b.featuredDescription || '',
       featuredSize: b.featuredSize || 'md',
       featuredIds: b.featuredIds || [],
+      footerTemplate: (b.footerTemplate as 'simple' | 'standard' | 'rich') || 'simple',
       footerBg: b.footerBg || '#111827',
       footerText: b.footerText || '#9ca3af',
+      footerAccent: b.footerAccent || '#6366f1',
       footerCopyright: b.footerCopyright || '',
+      footerTagline: b.footerTagline || '',
       footerShowLinks: b.footerShowLinks !== false,
+      footerLinkGroups: (() => { try { return typeof b.footerLinkGroups === 'string' ? JSON.parse(b.footerLinkGroups) : (b.footerLinkGroups || []); } catch { return []; } })(),
+      footerSocials: (() => { try { return typeof b.footerSocials === 'string' ? JSON.parse(b.footerSocials) : (b.footerSocials || []); } catch { return []; } })(),
     };
     setConfig(loaded);
     setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
@@ -394,43 +413,174 @@ export default function CustomizePage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Footer</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Background Color</Label>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={config.footerBg}
-                    onChange={e => setConfig(c => ({ ...c, footerBg: e.target.value }))}
-                    className="w-10 h-8 rounded border cursor-pointer" />
-                  <Input value={config.footerBg}
-                    onChange={e => setConfig(c => ({ ...c, footerBg: e.target.value }))}
-                    className="text-xs h-8 font-mono" />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Text Color</Label>
-                <div className="flex items-center gap-2">
-                  <input type="color" value={config.footerText}
-                    onChange={e => setConfig(c => ({ ...c, footerText: e.target.value }))}
-                    className="w-10 h-8 rounded border cursor-pointer" />
-                  <Input value={config.footerText}
-                    onChange={e => setConfig(c => ({ ...c, footerText: e.target.value }))}
-                    className="text-xs h-8 font-mono" />
-                </div>
+          <CardContent className="space-y-5">
+
+            {/* Template picker */}
+            <div className="space-y-2">
+              <Label className="text-xs">Footer Template</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { key: 'simple', label: 'Simple', preview: (
+                    <div className="w-full h-10 rounded flex flex-col justify-between p-1.5 bg-neutral-800">
+                      <div className="flex justify-between items-center">
+                        <div className="h-1.5 w-10 bg-neutral-500 rounded" />
+                        <div className="flex gap-1">{[1,2,3].map(i => <div key={i} className="h-1 w-4 bg-neutral-600 rounded" />)}</div>
+                      </div>
+                      <div className="h-0.5 bg-neutral-700 rounded w-full" />
+                    </div>
+                  )},
+                  { key: 'standard', label: 'Standard', preview: (
+                    <div className="w-full rounded bg-neutral-800 p-1.5 space-y-1">
+                      <div className="flex gap-2">
+                        <div className="flex-1 space-y-1"><div className="h-1.5 w-8 bg-indigo-500 rounded" /><div className="h-1 w-14 bg-neutral-600 rounded" /></div>
+                        {[1,2].map(i => <div key={i} className="flex-1 space-y-1">{[1,2,3].map(j => <div key={j} className="h-1 bg-neutral-600 rounded" />)}</div>)}
+                      </div>
+                      <div className="h-0.5 bg-neutral-700 rounded" />
+                      <div className="h-1 w-20 bg-neutral-700 rounded" />
+                    </div>
+                  )},
+                  { key: 'rich', label: 'Rich', preview: (
+                    <div className="w-full rounded bg-neutral-900 p-1.5 space-y-1">
+                      <div className="flex gap-1.5">
+                        <div className="flex-[1.5] space-y-1"><div className="h-1.5 w-8 bg-indigo-500 rounded" /><div className="h-1 w-12 bg-neutral-700 rounded" /><div className="flex gap-1 mt-1">{[1,2,3].map(i => <div key={i} className="w-3 h-3 rounded-full bg-neutral-700" />)}</div></div>
+                        {[1,2].map(i => <div key={i} className="flex-1 space-y-1">{[1,2,3,4].map(j => <div key={j} className="h-1 bg-neutral-700 rounded" />)}</div>)}
+                      </div>
+                      <div className="h-0.5 bg-neutral-800 rounded" />
+                      <div className="h-1 w-16 bg-neutral-800 rounded" />
+                    </div>
+                  )},
+                ] as { key: 'simple'|'standard'|'rich'; label: string; preview: React.ReactNode }[]).map(t => (
+                  <button key={t.key} type="button"
+                    onClick={() => setConfig(c => ({ ...c, footerTemplate: t.key }))}
+                    className={`rounded-xl border-2 p-2 text-left transition-all ${config.footerTemplate === t.key ? 'border-black bg-neutral-50' : 'border-neutral-200 hover:border-neutral-400'}`}>
+                    {t.preview}
+                    <p className="text-xs font-medium mt-1.5">{t.label}</p>
+                  </button>
+                ))}
               </div>
             </div>
+
+            {/* Shared: colors */}
+            <div className="grid grid-cols-2 gap-3">
+              {([['footerBg','Background'],['footerText','Text Color']] as const).map(([key, label]) => (
+                <div key={key} className="space-y-1">
+                  <Label className="text-xs">{label}</Label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={config[key]}
+                      onChange={e => setConfig(c => ({ ...c, [key]: e.target.value }))}
+                      className="w-10 h-8 rounded border cursor-pointer" />
+                    <Input value={config[key]}
+                      onChange={e => setConfig(c => ({ ...c, [key]: e.target.value }))}
+                      className="text-xs h-8 font-mono" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Standard + Rich: accent color */}
+            {config.footerTemplate !== 'simple' && (
+              <div className="space-y-1">
+                <Label className="text-xs">Accent Color <span className="text-neutral-400">(store name highlight)</span></Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={config.footerAccent}
+                    onChange={e => setConfig(c => ({ ...c, footerAccent: e.target.value }))}
+                    className="w-10 h-8 rounded border cursor-pointer" />
+                  <Input value={config.footerAccent}
+                    onChange={e => setConfig(c => ({ ...c, footerAccent: e.target.value }))}
+                    className="text-xs h-8 font-mono" />
+                </div>
+              </div>
+            )}
+
+            {/* Shared: copyright */}
             <div className="space-y-1">
               <Label className="text-xs">Copyright Text <span className="text-neutral-400">(leave blank to auto-generate)</span></Label>
               <Input placeholder="© 2026 Your Store. All rights reserved."
                 value={config.footerCopyright}
                 onChange={e => setConfig(c => ({ ...c, footerCopyright: e.target.value }))} />
             </div>
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <input type="checkbox" checked={config.footerShowLinks}
-                onChange={e => setConfig(c => ({ ...c, footerShowLinks: e.target.checked }))}
-                className="accent-black w-4 h-4" />
-              <span>Show navigation links in footer</span>
-            </label>
+
+            {/* Simple: show nav links toggle */}
+            {config.footerTemplate === 'simple' && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={config.footerShowLinks}
+                  onChange={e => setConfig(c => ({ ...c, footerShowLinks: e.target.checked }))}
+                  className="accent-black w-4 h-4" />
+                <span>Show navigation links in footer</span>
+              </label>
+            )}
+
+            {/* Standard + Rich: tagline + link groups */}
+            {config.footerTemplate !== 'simple' && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs">Tagline <span className="text-neutral-400">(optional short description)</span></Label>
+                  <Input placeholder="Quality products for everyday life."
+                    value={config.footerTagline}
+                    onChange={e => setConfig(c => ({ ...c, footerTagline: e.target.value }))} />
+                </div>
+
+                {/* Link groups */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Link Groups <span className="text-neutral-400">(columns)</span></Label>
+                    <button type="button"
+                      onClick={() => setConfig(c => ({ ...c, footerLinkGroups: [...c.footerLinkGroups, { heading: '', links: [{ label: '', href: '' }] }] }))}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">+ Add Group</button>
+                  </div>
+                  {config.footerLinkGroups.map((group, gi) => (
+                    <div key={gi} className="border rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input placeholder="Group heading (e.g. Quick Links)"
+                          value={group.heading} className="h-8 text-sm flex-1"
+                          onChange={e => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.map((g, i) => i === gi ? { ...g, heading: e.target.value } : g) }))} />
+                        <button type="button"
+                          onClick={() => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.filter((_, i) => i !== gi) }))}
+                          className="text-neutral-400 hover:text-red-500 text-lg leading-none shrink-0">×</button>
+                      </div>
+                      {group.links.map((link, li) => (
+                        <div key={li} className="flex items-center gap-1.5 pl-2">
+                          <Input placeholder="Label" value={link.label} className="h-7 text-xs w-28"
+                            onChange={e => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.map((g, i) => i === gi ? { ...g, links: g.links.map((l, j) => j === li ? { ...l, label: e.target.value } : l) } : g) }))} />
+                          <Input placeholder="https://…" value={link.href} className="h-7 text-xs flex-1 font-mono"
+                            onChange={e => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.map((g, i) => i === gi ? { ...g, links: g.links.map((l, j) => j === li ? { ...l, href: e.target.value } : l) } : g) }))} />
+                          <button type="button"
+                            onClick={() => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.map((g, i) => i === gi ? { ...g, links: g.links.filter((_, j) => j !== li) } : g) }))}
+                            className="text-neutral-300 hover:text-red-500 text-base leading-none shrink-0">×</button>
+                        </div>
+                      ))}
+                      <button type="button"
+                        onClick={() => setConfig(c => ({ ...c, footerLinkGroups: c.footerLinkGroups.map((g, i) => i === gi ? { ...g, links: [...g.links, { label: '', href: '' }] } : g) }))}
+                        className="text-xs text-neutral-500 hover:text-black pl-2">+ Add link</button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Rich: social links */}
+            {config.footerTemplate === 'rich' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Social Links</Label>
+                  <button type="button"
+                    onClick={() => setConfig(c => ({ ...c, footerSocials: [...c.footerSocials, { label: '', href: '' }] }))}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">+ Add</button>
+                </div>
+                {config.footerSocials.map((s, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <Input placeholder="Instagram" value={s.label} className="h-7 text-xs w-28"
+                      onChange={e => setConfig(c => ({ ...c, footerSocials: c.footerSocials.map((x, j) => j === i ? { ...x, label: e.target.value } : x) }))} />
+                    <Input placeholder="https://instagram.com/…" value={s.href} className="h-7 text-xs flex-1 font-mono"
+                      onChange={e => setConfig(c => ({ ...c, footerSocials: c.footerSocials.map((x, j) => j === i ? { ...x, href: e.target.value } : x) }))} />
+                    <button type="button"
+                      onClick={() => setConfig(c => ({ ...c, footerSocials: c.footerSocials.filter((_, j) => j !== i) }))}
+                      className="text-neutral-300 hover:text-red-500 text-base leading-none shrink-0">×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
           </CardContent>
         </Card>
 

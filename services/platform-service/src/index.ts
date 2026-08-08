@@ -71,6 +71,24 @@ app.listen(PORT, async () => {
       )
     `);
   } catch { /* table already exists */ }
+
+  // Seed built-in templates (upsert — safe to run every startup)
+  const builtInTemplates = [
+    { key: 'default', name: 'Top Nav', description: 'Clean top navigation bar with hero banner.', enabled: true },
+    { key: 'sidebar', name: 'Sidebar', description: 'Left sidebar with category filters. Best for large catalogs.', enabled: true },
+    { key: 'card', name: 'Card Grid', description: 'Large card layout with gradient background. Bold and modern.', enabled: true },
+    { key: 'footer-simple', name: 'Simple Footer', description: 'Single row — store name, copyright and nav links.', enabled: true },
+    { key: 'footer-standard', name: 'Standard Footer', description: 'Two rows — brand column with link groups, then copyright bar.', enabled: true },
+    { key: 'footer-rich', name: 'Rich Footer', description: 'Multi-column with social icons, link groups and copyright bar.', enabled: true },
+  ];
+  for (const t of builtInTemplates) {
+    await prisma.storeTemplate.upsert({
+      where: { key: t.key },
+      update: { name: t.name, description: t.description },
+      create: { key: t.key, name: t.name, description: t.description, enabled: t.enabled },
+    }).catch(() => {});
+  }
+
   console.log(`platform-service running on port ${PORT}`);
 });
 
