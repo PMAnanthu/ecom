@@ -356,14 +356,14 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
 
   const onAdd = (p: SectionProduct) => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 });
 
-  const renderSection = (show: unknown, title: string, description: unknown, align: unknown, _size: unknown, content: React.ReactNode) => {
-    if (!isTruthy(show)) return null;
+  const makeSection = (show: unknown, title: string, desc: unknown, align: unknown, content: React.JSX.Element | null) => {
+    if (!isTruthy(show) || !content) return null;
     const alignCls = sectionAlign(align);
     return (
       <section className="px-4 py-8 max-w-7xl mx-auto">
         <div className={`flex flex-col gap-1 mb-5 ${alignCls}`}>
           <h2 className="text-xl font-bold">{title}</h2>
-          {description && typeof description === 'string' && <p className="text-sm text-neutral-500 max-w-lg">{description}</p>}
+          {typeof desc === 'string' && desc && <p className="text-sm text-neutral-500 max-w-lg">{desc}</p>}
         </div>
         {content}
       </section>
@@ -372,14 +372,14 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
 
   return (
     <>
-      {renderSection(branding.showCategories, 'Shop by Category', branding.categoriesDescription, branding.categoriesAlign, branding.categoriesSize,
-        <CategorySection categories={nonEmptyCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} sizeConfig={sectionItemSize(branding.categoriesSize)} />
+      {makeSection(branding.showCategories, 'Shop by Category', branding.categoriesDescription, branding.categoriesAlign,
+        nonEmptyCategories.length > 0 ? <CategorySection categories={nonEmptyCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} sizeConfig={sectionItemSize(branding.categoriesSize)} /> : null
       )}
-      {renderSection(branding.showNewArrivals, 'New Arrivals', branding.newArrivalsDescription, branding.newArrivalsAlign, branding.newArrivalsSize,
-        <ProductSection products={newArrivalProducts} style={(branding.newArrivalsStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.newArrivalsSize)} />
+      {makeSection(branding.showNewArrivals, 'New Arrivals', branding.newArrivalsDescription, branding.newArrivalsAlign,
+        newArrivalProducts.length > 0 ? <ProductSection products={newArrivalProducts} style={(branding.newArrivalsStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.newArrivalsSize)} /> : null
       )}
-      {renderSection(branding.showFeatured, 'Featured', branding.featuredDescription, branding.featuredAlign, branding.featuredSize,
-        <ProductSection products={featuredProducts} style={(branding.featuredStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.featuredSize)} />
+      {makeSection(branding.showFeatured, 'Featured', branding.featuredDescription, branding.featuredAlign,
+        featuredProducts.length > 0 ? <ProductSection products={featuredProducts} style={(branding.featuredStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.featuredSize)} /> : null
       )}
     </>
   );
