@@ -47,6 +47,7 @@ interface HomeConfig {
   categoriesAlign: string;
   categoriesDescription: string;
   categoriesSize: string;
+  categoryImages: Record<string, string>;
   showNewArrivals: boolean;
   newArrivalsStyle: DisplayStyle;
   newArrivalsAlign: string;
@@ -74,6 +75,7 @@ const defaultConfig: HomeConfig = {
   categoriesAlign: 'left',
   categoriesDescription: '',
   categoriesSize: 'md',
+  categoryImages: {},
   showNewArrivals: false,
   newArrivalsStyle: 'cards',
   newArrivalsAlign: 'left',
@@ -89,6 +91,7 @@ const defaultConfig: HomeConfig = {
 };
 
 interface Product { id: string; name: string; images: string[] }
+interface Category { id: string; name: string }
 
 const STYLE_OPTIONS: { value: DisplayStyle; label: string }[] = [
   { value: 'cards', label: 'Cards (album frame)' },
@@ -105,13 +108,15 @@ export default function CustomizePage() {
   const [bgFile, setBgFile] = useState<File | null>(null);
   const [slideFiles, setSlideFiles] = useState<(File | null)[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const bgRef = useRef<HTMLInputElement>(null);
   const slideRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const loadData = useCallback(async () => {
-    const [storeRes, productsRes] = await Promise.all([
+    const [storeRes, productsRes, catsRes] = await Promise.all([
       api.get('/store'),
       api.get('/catalog/products?limit=100'),
+      api.get('/catalog/categories'),
     ]);
     const b = storeRes.data.store?.branding || {};
     const loaded: HomeConfig = {
@@ -127,6 +132,7 @@ export default function CustomizePage() {
       categoriesAlign: b.categoriesAlign || 'left',
       categoriesDescription: b.categoriesDescription || '',
       categoriesSize: b.categoriesSize || 'md',
+      categoryImages: b.categoryImages || {},
       showNewArrivals: b.showNewArrivals || false,
       newArrivalsStyle: b.newArrivalsStyle || 'cards',
       newArrivalsAlign: b.newArrivalsAlign || 'left',
@@ -144,6 +150,7 @@ export default function CustomizePage() {
     setSlideFiles(new Array(loaded.heroSlides.length).fill(null));
     if (b.heroBgImage) setBgPreview(b.heroBgImage.startsWith('http') ? b.heroBgImage : `${STORE_SERVICE}${b.heroBgImage}`);
     setProducts(productsRes.data.products || []);
+    setCategories(catsRes.data.categories || []);
   }, []);
 
   useEffect(() => { loadData().finally(() => setLoading(false)); }, [loadData]);
@@ -331,7 +338,12 @@ export default function CustomizePage() {
           onDescriptionChange={v => setConfig(c => ({ ...c, categoriesDescription: v }))}
           size={config.categoriesSize}
           onSizeChange={v => setConfig(c => ({ ...c, categoriesSize: v }))}>
-          <p className="text-xs text-neutral-400">All your store categories will be shown here.</p>
+          <CategoryImagePicker
+            categories={categories}
+            images={config.categoryImages}
+            onChange={imgs => setConfig(c => ({ ...c, categoryImages: imgs }))}
+            uploadFile={uploadFile}
+          />
         </SectionPanel>
 
         <SectionPanel
@@ -433,6 +445,70 @@ function SectionPanel({ title, enabled, onToggle, style, onStyleChange, align, o
         </CardContent>
       )}
     </Card>
+  );
+}
+
+function CategoryImagePicker({ categories, images, onChange, uploadFile }: Readonly<{
+  categories: Category[];
+  images: Record<string, string>;
+  onChange: (imgs: Record<string, string>) => void;
+  uploadFile: (f: File) => Promise<string>;
+}>) {
+  const [uploading, setUploading] = useState<string | null>(null);
+
+  const handleFile = async (catId: string, file: File) => {
+    setUploading(catId);
+    try {
+      const url = await uploadFile(file);
+      onChange({ ...images, [catId]: url });
+    } finally { setUploading(null); }
+  };
+
+  if (!categories.length) return <p className="text-xs text-neutral-400">No categories yet. Add categories in Catalog first.</p>;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-neutral-500">Category Images <span className="text-neutral-400">(select one image per category)</span></p>
+      <div className="space-y-2">
+        {categories.map(cat => {
+          const img = images[cat.id] || '';
+          const isUploading = uploading === cat.id;
+          return (
+            <div key={cat.id} className="flex items-center gap-3 p-2 border rounded-lg bg-neutral-50">
+              <div className="w-14 h-14 rounded-lg overflow-hidden bg-neutral-200 shrink-0 flex items-center justify-center">
+                {img
+                  ? <img src={img} alt={cat.name} className="w-full h-full object-cover" />
+                  : <span className="text-lg font-bold text-neutral-400">{cat.name.charAt(0).toUpperCase()}</span>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{cat.name}</p>
+                <p className="text-xs text-neutral-400">{img ? 'Image set' : 'No image — will use auto-pick'}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {(() => {
+                  let btnLabel = 'Upload';
+                  if (isUploading) btnLabel = 'Uploading…';
+                  else if (img) btnLabel = 'Change';
+                  return (
+                    <label className={`text-xs px-2 py-1 rounded border cursor-pointer transition-colors ${isUploading ? 'opacity-50 pointer-events-none' : 'hover:border-black'}`}>
+                      {btnLabel}
+                      <input type="file" accept="image/*" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(cat.id, f); }} />
+                    </label>
+                  );
+                })()}
+                {img && (
+                  <button type="button" onClick={() => { const n = { ...images }; delete n[cat.id]; onChange(n); }}
+                    className="text-neutral-300 hover:text-red-500">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

@@ -178,17 +178,20 @@ function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string
 
 interface SizeConfig { card: string; circle: string; rect: string }
 
-function CategorySection({ categories, style, base, accent, products, sizeConfig }: Readonly<{
+function CategorySection({ categories, style, base, accent, products, sizeConfig, categoryImages }: Readonly<{
   categories: { id: string; name: string }[];
   style: string; base: string; accent: string;
   products: SectionProduct[];
   sizeConfig?: SizeConfig;
+  categoryImages?: Record<string, string>;
 }>) {
   if (!categories.length) return null;
   const sz = sizeConfig ?? { card: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4', circle: 'w-20 h-20', rect: 'w-24 h-32' };
 
   const categoryImage = (catId: string): string | null =>
-    products.find(p => p.category && (p.category as unknown as { id: string }).id === catId && p.images?.[0])?.images?.[0] ?? null;
+    categoryImages?.[catId] ||
+    products.find(p => p.category && (p.category as unknown as { id: string }).id === catId && p.images?.[0])?.images?.[0] ||
+    null;
 
   if (style === 'circle') return (
     <div className="flex flex-wrap gap-6 justify-center">
@@ -380,7 +383,7 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
   return (
     <>
       {makeSection(branding.showCategories, 'Shop by Category', branding.categoriesDescription, branding.categoriesAlign,
-        nonEmptyCategories.length > 0 ? <CategorySection categories={nonEmptyCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} sizeConfig={sectionItemSize(branding.categoriesSize)} /> : null
+        nonEmptyCategories.length > 0 ? <CategorySection categories={nonEmptyCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} sizeConfig={sectionItemSize(branding.categoriesSize)} categoryImages={(branding.categoryImages as Record<string, string>) || {}} /> : null
       )}
       {makeSection(branding.showNewArrivals, 'New Arrivals', branding.newArrivalsDescription, branding.newArrivalsAlign,
         newArrivalProducts.length > 0 ? <ProductSection products={newArrivalProducts} style={(branding.newArrivalsStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.newArrivalsSize)} /> : null
