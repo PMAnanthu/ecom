@@ -363,7 +363,7 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
       <section className="px-4 py-8 max-w-7xl mx-auto">
         <div className={`flex flex-col gap-1 mb-5 ${alignCls}`}>
           <h2 className="text-xl font-bold">{title}</h2>
-          {description && <p className="text-sm text-neutral-500 max-w-lg">{description as string}</p>}
+          {description && typeof description === 'string' && <p className="text-sm text-neutral-500 max-w-lg">{description}</p>}
         </div>
         {content}
       </section>
