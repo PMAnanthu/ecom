@@ -75,10 +75,10 @@ export default function SubscriptionPage() {
         return;
       }
 
-      // Create Razorpay order
-      const amountPaise = Math.round(selected.price * 100);
-      let rzData: { orderId: string; amount: number; currency: string; keyId: string };
+      // Try Razorpay — fall back to dummy if not configured
+      let rzData: { orderId: string; amount: number; currency: string; keyId: string } | null = null;
       try {
+        const amountPaise = Math.round(selected.price * 100);
         const { data } = await api.post('/payment/subscriptions/create', {
           amount: amountPaise,
           currency: 'INR',
@@ -86,7 +86,12 @@ export default function SubscriptionPage() {
         });
         rzData = data;
       } catch {
-        // Payment service not configured — fall back to dummy
+        // Payment service not configured — use dummy payment
+        await activateSubscription(selected, `DUMMY-${Date.now()}`);
+        return;
+      }
+
+      if (!rzData) {
         await activateSubscription(selected, `DUMMY-${Date.now()}`);
         return;
       }
@@ -97,10 +102,10 @@ export default function SubscriptionPage() {
       await new Promise<void>((resolve, reject) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rzp = new (window as any).Razorpay({
-          key: rzData.keyId,
-          amount: rzData.amount,
-          currency: rzData.currency,
-          order_id: rzData.orderId,
+          key: rzData!.keyId,
+          amount: rzData!.amount,
+          currency: rzData!.currency,
+          order_id: rzData!.orderId,
           name: 'Platform Subscription',
           description: `${selected.name} — ${PERIOD_LABEL[selected.billingPeriod]}`,
           prefill: { email: user.email },
