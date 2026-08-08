@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, LogOut, ShoppingBag, ExternalLink,
-  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard, Paintbrush, Wallet,
+  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard, Paintbrush, Wallet, Mail,
 } from 'lucide-react';
 
 const customizeSubLinks = [
@@ -17,6 +17,7 @@ const customizeSubLinks = [
   { href: '/customize/theme', label: 'Theme & Template', icon: Paintbrush },
   { href: '/customize/about', label: 'About', icon: Info },
   { href: '/customize/navbar', label: 'Navbar', icon: Navigation },
+  { href: '/customize/messages', label: 'Messages', icon: Mail },
 ];
 
 const adminLinks = [

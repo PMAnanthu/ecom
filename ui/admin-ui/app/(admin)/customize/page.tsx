@@ -171,17 +171,6 @@ export default function CustomizePage() {
   const updateSlide = (i: number, field: keyof Slide, value: string) =>
     setConfig(c => ({ ...c, heroSlides: c.heroSlides.map((s, j) => j === i ? { ...s, [field]: value } : s) }));
 
-  const saveSections = async () => {
-    setSaving(true);
-    try {
-      const storeRes = await api.get('/store');
-      const existing = storeRes.data.store?.branding || {};
-      await api.patch('/store', { branding: { ...existing, ...config } });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } finally { setSaving(false); }
-  };
-
   const save = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
@@ -341,7 +330,7 @@ export default function CustomizePage() {
           description={config.categoriesDescription}
           onDescriptionChange={v => setConfig(c => ({ ...c, categoriesDescription: v }))}
           size={config.categoriesSize}
-          onSizeChange={v => setConfig(c => ({ ...c, categoriesSize: v }))}
+          onSizeChange={v => setConfig(c => ({ ...c, categoriesSize: v }))}>
           <p className="text-xs text-neutral-400">All your store categories will be shown here.</p>
         </SectionPanel>
 
@@ -356,7 +345,7 @@ export default function CustomizePage() {
           description={config.newArrivalsDescription}
           onDescriptionChange={v => setConfig(c => ({ ...c, newArrivalsDescription: v }))}
           size={config.newArrivalsSize}
-          onSizeChange={v => setConfig(c => ({ ...c, newArrivalsSize: v }))}
+          onSizeChange={v => setConfig(c => ({ ...c, newArrivalsSize: v }))}>
           <ProductPicker label="Select products" products={products} selected={config.newArrivalIds} onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))} />
         </SectionPanel>
 
@@ -371,7 +360,7 @@ export default function CustomizePage() {
           description={config.featuredDescription}
           onDescriptionChange={v => setConfig(c => ({ ...c, featuredDescription: v }))}
           size={config.featuredSize}
-          onSizeChange={v => setConfig(c => ({ ...c, featuredSize: v }))}
+          onSizeChange={v => setConfig(c => ({ ...c, featuredSize: v }))}>
           <ProductPicker label="Select products" products={products} selected={config.featuredIds} onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))} />
         </SectionPanel>
 
