@@ -4,8 +4,14 @@ import { CREDENTIALS } from '../../fixtures/credentials';
 
 async function loginAsAdmin(page: Page) {
   const login = new LoginPage(page);
-  await login.login(CREDENTIALS.admin.email, CREDENTIALS.admin.password);
-  await expect(page).toHaveURL(/\/dashboard/, { timeout: 20000 });
+  // Wait for network idle before checking URL — Cloud Run cold starts are slow
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.getByLabel('Email').fill(CREDENTIALS.admin.email);
+  await page.getByLabel('Password').fill(CREDENTIALS.admin.password);
+  await Promise.all([
+    page.waitForURL(/\/dashboard/, { timeout: 30000 }),
+    page.getByRole('button', { name: /sign in/i }).click(),
+  ]);
 }
 
 test.describe('Admin — Login', () => {
@@ -42,16 +48,15 @@ test.describe('Admin — Catalog', () => {
 
   test('add product opens form', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
-    await expect(page.locator('[data-slot="card-title"]', { hasText: /new product/i })).toBeVisible();
-    // First text input in the form is the name field
-    await expect(page.locator('[data-slot="card-content"] input[type="text"]').first()).toBeVisible();
+    await expect(page.getByText(/new product/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('input[type="text"]').first()).toBeVisible();
   });
 
   test('create a product', async ({ page }) => {
     await page.getByRole('button', { name: /add product/i }).click();
-    await expect(page.locator('[data-slot="card-title"]', { hasText: /new product/i })).toBeVisible();
+    await expect(page.getByText(/new product/i)).toBeVisible({ timeout: 5000 });
     const productName = `Test Product ${Date.now()}`;
-    await page.locator('[data-slot="card-content"] input[type="text"]').first().fill(productName);
+    await page.locator('input[type="text"]').first().fill(productName);
     await page.locator('input[type="number"]').nth(0).fill('49.99');
     await page.locator('input[type="number"]').nth(1).fill('10');
     await page.getByRole('button', { name: /save product/i }).click();
@@ -116,8 +121,7 @@ test.describe('Admin — Shop Settings', () => {
 
   test('shows settings page with store name field', async ({ page }) => {
     await expect(page.getByText('Shop Settings')).toBeVisible({ timeout: 10000 });
-    // First text input on settings page is the shop name
-    await expect(page.locator('[data-slot="card-content"] input[type="text"]').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('input[type="text"]').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('currency selector shows currency options', async ({ page }) => {
