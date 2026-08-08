@@ -4,18 +4,12 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useCartStore } from '@/lib/cart-store';
 import { useCurrency } from '@/lib/template-context';
 
 interface Product {
-  id: string;
-  name: string;
-  price: number;
-  stock: number;
-  images: string[];
-  description?: string;
-  category?: { id: string; name: string };
+  id: string; name: string; price: number; stock: number;
+  images: string[]; description?: string; category?: { id: string; name: string };
 }
 
 function useStorePath() {
@@ -25,11 +19,14 @@ function useStorePath() {
 }
 
 export function ProductCard({ product }: Readonly<{ product: Product }>) {
-  const { addItem } = useCartStore();
+  const { items, addItem, updateQty } = useCartStore();
   const { symbol } = useCurrency();
   const [imgIdx, setImgIdx] = useState(0);
   const base = useStorePath();
   const images = product.images || [];
+
+  const cartItem = items.find(i => i.productId === product.id);
+  const qty = cartItem?.qty ?? 0;
 
   return (
     <div className="bg-white rounded-lg border overflow-hidden hover:shadow-md transition-shadow flex flex-col">
@@ -63,13 +60,22 @@ export function ProductCard({ product }: Readonly<{ product: Product }>) {
         </Link>
         <div className="flex items-center justify-between mt-auto pt-2">
           <span className="font-bold text-sm">{symbol}{product.price.toFixed(2)}</span>
-          {product.stock === 0
-            ? <Badge variant="secondary" className="text-xs">Out of stock</Badge>
-            : <Button size="sm" className="h-7 text-xs px-3"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 }); }}>
-                Add
-              </Button>
-          }
+          {product.stock === 0 && <Badge variant="secondary" className="text-xs">Out of stock</Badge>}
+          {product.stock > 0 && qty > 0 && (
+            <div className="flex items-center gap-1 border rounded-full overflow-hidden text-xs">
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateQty(product.id, qty - 1); }}
+                className="px-2.5 py-1 hover:bg-neutral-100 font-bold">−</button>
+              <span className="px-1.5 font-semibold min-w-[1.5rem] text-center">{qty}</span>
+              <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 }); }}
+                className="px-2.5 py-1 hover:bg-neutral-100 font-bold">+</button>
+            </div>
+          )}
+          {product.stock > 0 && qty === 0 && (
+            <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); addItem({ productId: product.id, name: product.name, price: product.price, qty: 1 }); }}
+              className="bg-black text-white text-xs px-3 py-1.5 rounded-full hover:bg-neutral-800 transition-colors">
+              Add
+            </button>
+          )}
         </div>
       </div>
     </div>

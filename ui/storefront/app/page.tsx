@@ -176,12 +176,16 @@ function HeroSection({ storeName, branding, base }: Readonly<{ storeName: string
 
 // ─── Section display components ────────────────────────────────────────────
 
-function CategorySection({ categories, style, base, accent, products }: Readonly<{
+interface SizeConfig { card: string; circle: string; rect: string }
+
+function CategorySection({ categories, style, base, accent, products, sizeConfig }: Readonly<{
   categories: { id: string; name: string }[];
   style: string; base: string; accent: string;
   products: SectionProduct[];
+  sizeConfig?: SizeConfig;
 }>) {
   if (!categories.length) return null;
+  const sz = sizeConfig ?? { card: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4', circle: 'w-20 h-20', rect: 'w-24 h-32' };
 
   const categoryImage = (catId: string): string | null =>
     products.find(p => p.category && (p.category as unknown as { id: string }).id === catId && p.images?.[0])?.images?.[0] ?? null;
@@ -192,7 +196,7 @@ function CategorySection({ categories, style, base, accent, products }: Readonly
         const img = categoryImage(c.id);
         return (
           <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
-            <div className="w-20 h-20 rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0"
+            <div className={`${sz.circle} rounded-full overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0`}
               style={{ backgroundColor: accent || '#6366f1' }}>
               {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 : c.name.charAt(0).toUpperCase()}
@@ -209,7 +213,7 @@ function CategorySection({ categories, style, base, accent, products }: Readonly
         const img = categoryImage(c.id);
         return (
           <Link key={c.id} href={`${base}/products?category=${c.id}`} className="flex flex-col items-center gap-2 group">
-            <div className="w-24 h-32 rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0"
+            <div className={`${sz.rect} rounded-xl overflow-hidden flex items-center justify-center text-2xl font-bold text-white shrink-0`}
               style={{ backgroundColor: accent || '#6366f1' }}>
               {img ? <img src={imgUrl(img)} alt={c.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                 : c.name.charAt(0).toUpperCase()}
@@ -221,7 +225,7 @@ function CategorySection({ categories, style, base, accent, products }: Readonly
     </div>
   );
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className={`grid ${sz.card} gap-4`}>
       {categories.map(c => {
         const img = categoryImage(c.id);
         return (
@@ -246,16 +250,18 @@ function CategorySection({ categories, style, base, accent, products }: Readonly
 
 type SectionProduct = { id: string; name: string; price: number; stock: number; images: string[]; category?: { name: string } };
 
-function ProductSection({ products, style, base, symbol, onAdd }: Readonly<{
+function ProductSection({ products, style, base, symbol, onAdd, sizeConfig }: Readonly<{
   products: SectionProduct[]; style: string; base: string; symbol: string;
   onAdd: (p: SectionProduct) => void;
+  sizeConfig?: SizeConfig;
 }>) {
   if (!products.length) return null;
+  const sz = sizeConfig ?? { card: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4', circle: 'w-24 h-24', rect: 'w-28 h-40' };
   if (style === 'circle') return (
     <div className="flex flex-wrap gap-6 justify-center">
       {products.map(p => (
         <Link key={p.id} href={`${base}/products/${p.id}`} className="flex flex-col items-center gap-2 group max-w-[100px]">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-neutral-100 shrink-0">
+          <div className={`${sz.circle} rounded-full overflow-hidden bg-neutral-100 shrink-0`}>
             {p.images?.[0] ? <img src={imgUrl(p.images[0])} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
               : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
           </div>
@@ -269,7 +275,7 @@ function ProductSection({ products, style, base, symbol, onAdd }: Readonly<{
     <div className="flex flex-wrap gap-4 justify-center">
       {products.map(p => (
         <Link key={p.id} href={`${base}/products/${p.id}`} className="flex flex-col items-center gap-2 group w-28">
-          <div className="w-28 h-40 rounded-xl overflow-hidden bg-neutral-100">
+          <div className={`${sz.rect} rounded-xl overflow-hidden bg-neutral-100`}>
             {p.images?.[0] ? <img src={imgUrl(p.images[0])} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
               : <div className="w-full h-full flex items-center justify-center text-2xl">📦</div>}
           </div>
@@ -280,7 +286,7 @@ function ProductSection({ products, style, base, symbol, onAdd }: Readonly<{
     </div>
   );
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div className={`grid ${sz.card} gap-4`}>
       {products.map(p => (
         <div key={p.id} className="border rounded-2xl overflow-hidden hover:shadow-md transition-shadow flex flex-col">
           <Link href={`${base}/products/${p.id}`} className="block aspect-[4/3] bg-neutral-100 overflow-hidden">
@@ -305,10 +311,22 @@ function isTruthy(val: unknown): boolean {
   return val === true || val === 'true';
 }
 
+function sectionAlign(align: unknown): string {
+  if (align === 'center') return 'text-center items-center';
+  if (align === 'right') return 'text-right items-end';
+  return 'text-left items-start';
+}
+
+function sectionItemSize(size: unknown): { card: string; circle: string; rect: string } {
+  if (size === 'sm') return { card: 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-6', circle: 'w-16 h-16', rect: 'w-20 h-28' };
+  if (size === 'lg') return { card: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3', circle: 'w-28 h-28', rect: 'w-36 h-48' };
+  return { card: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4', circle: 'w-24 h-24', rect: 'w-28 h-40' };
+}
+
 function HomeSections({ branding, allProducts, allCategories, base, symbol, addItem }: Readonly<{
   branding: Record<string, unknown>;
   allProducts: SectionProduct[];
-  allCategories: { id: string; name: string }[];
+  allCategories: { id: string; name: string; _count?: { products: number } }[];
   base: string; symbol: string;
   addItem: (item: { productId: string; name: string; price: number; qty: number }) => void;
 }>) {
@@ -331,27 +349,37 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
     ? featuredIds.map(id => allProducts.find(p => p.id === id)).filter(Boolean) as SectionProduct[]
     : allProducts.slice(0, 8);
 
+  // Filter out categories with no products
+  const nonEmptyCategories = allCategories.filter(c =>
+    (c._count?.products ?? allProducts.filter(p => (p as { category?: { id: string } }).category?.id === c.id).length) > 0
+  );
+
   const onAdd = (p: SectionProduct) => addItem({ productId: p.id, name: p.name, price: p.price, qty: 1 });
+
+  const renderSection = (show: unknown, title: string, description: unknown, align: unknown, size: unknown, content: React.ReactNode) => {
+    if (!isTruthy(show)) return null;
+    const alignCls = sectionAlign(align);
+    return (
+      <section className="px-4 py-8 max-w-7xl mx-auto">
+        <div className={`flex flex-col gap-1 mb-5 ${alignCls}`}>
+          <h2 className="text-xl font-bold">{title}</h2>
+          {description && <p className="text-sm text-neutral-500 max-w-lg">{description as string}</p>}
+        </div>
+        {content}
+      </section>
+    );
+  };
 
   return (
     <>
-      {isTruthy(branding.showCategories) && allCategories.length > 0 && (
-        <section className="px-4 py-8 max-w-7xl mx-auto">
-          <h2 className="text-xl font-bold mb-5">Shop by Category</h2>
-          <CategorySection categories={allCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} />
-        </section>
+      {renderSection(branding.showCategories, 'Shop by Category', branding.categoriesDescription, branding.categoriesAlign, branding.categoriesSize,
+        <CategorySection categories={nonEmptyCategories} style={(branding.categoriesStyle as string) || 'cards'} base={base} accent={accent} products={allProducts} sizeConfig={sectionItemSize(branding.categoriesSize)} />
       )}
-      {isTruthy(branding.showNewArrivals) && (
-        <section className="px-4 py-8 max-w-7xl mx-auto">
-          <h2 className="text-xl font-bold mb-5">New Arrivals</h2>
-          <ProductSection products={newArrivalProducts} style={(branding.newArrivalsStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} />
-        </section>
+      {renderSection(branding.showNewArrivals, 'New Arrivals', branding.newArrivalsDescription, branding.newArrivalsAlign, branding.newArrivalsSize,
+        <ProductSection products={newArrivalProducts} style={(branding.newArrivalsStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.newArrivalsSize)} />
       )}
-      {isTruthy(branding.showFeatured) && (
-        <section className="px-4 py-8 max-w-7xl mx-auto">
-          <h2 className="text-xl font-bold mb-5">Featured</h2>
-          <ProductSection products={featuredProducts} style={(branding.featuredStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} />
-        </section>
+      {renderSection(branding.showFeatured, 'Featured', branding.featuredDescription, branding.featuredAlign, branding.featuredSize,
+        <ProductSection products={featuredProducts} style={(branding.featuredStyle as string) || 'cards'} base={base} symbol={symbol} onAdd={onAdd} sizeConfig={sectionItemSize(branding.featuredSize)} />
       )}
     </>
   );

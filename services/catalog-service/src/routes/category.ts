@@ -28,8 +28,11 @@ function buildTree(cats: { id: string; name: string; parentId: string | null; st
 categoryRouter.get('/', async (req: Request, res: Response) => {
   const storeId = req.headers['x-store-id'] as string | undefined;
   const where = storeId ? { storeId } : {};
-  const categories = await prisma.category.findMany({ where, orderBy: { name: 'asc' } });
-  // Return both flat list and tree
+  const categories = await prisma.category.findMany({
+    where,
+    orderBy: { name: 'asc' },
+    include: { _count: { select: { products: true } } },
+  });
   const tree = buildTree(categories as Parameters<typeof buildTree>[0]);
   res.json({ categories, tree });
 });

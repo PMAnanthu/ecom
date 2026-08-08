@@ -44,11 +44,20 @@ interface HomeConfig {
   // Section panels
   showCategories: boolean;
   categoriesStyle: DisplayStyle;
+  categoriesAlign: string;
+  categoriesDescription: string;
+  categoriesSize: string;
   showNewArrivals: boolean;
   newArrivalsStyle: DisplayStyle;
+  newArrivalsAlign: string;
+  newArrivalsDescription: string;
+  newArrivalsSize: string;
   newArrivalIds: string[];
   showFeatured: boolean;
   featuredStyle: DisplayStyle;
+  featuredAlign: string;
+  featuredDescription: string;
+  featuredSize: string;
   featuredIds: string[];
 }
 
@@ -62,11 +71,20 @@ const defaultConfig: HomeConfig = {
   heroSlides: [],
   showCategories: false,
   categoriesStyle: 'cards',
+  categoriesAlign: 'left',
+  categoriesDescription: '',
+  categoriesSize: 'md',
   showNewArrivals: false,
   newArrivalsStyle: 'cards',
+  newArrivalsAlign: 'left',
+  newArrivalsDescription: '',
+  newArrivalsSize: 'md',
   newArrivalIds: [],
   showFeatured: false,
   featuredStyle: 'cards',
+  featuredAlign: 'left',
+  featuredDescription: '',
+  featuredSize: 'md',
   featuredIds: [],
 };
 
@@ -106,11 +124,20 @@ export default function CustomizePage() {
       heroSlides: b.heroSlides || [],
       showCategories: b.showCategories || false,
       categoriesStyle: b.categoriesStyle || 'cards',
+      categoriesAlign: b.categoriesAlign || 'left',
+      categoriesDescription: b.categoriesDescription || '',
+      categoriesSize: b.categoriesSize || 'md',
       showNewArrivals: b.showNewArrivals || false,
       newArrivalsStyle: b.newArrivalsStyle || 'cards',
+      newArrivalsAlign: b.newArrivalsAlign || 'left',
+      newArrivalsDescription: b.newArrivalsDescription || '',
+      newArrivalsSize: b.newArrivalsSize || 'md',
       newArrivalIds: b.newArrivalIds || [],
       showFeatured: b.showFeatured || false,
       featuredStyle: b.featuredStyle || 'cards',
+      featuredAlign: b.featuredAlign || 'left',
+      featuredDescription: b.featuredDescription || '',
+      featuredSize: b.featuredSize || 'md',
       featuredIds: b.featuredIds || [],
     };
     setConfig(loaded);
@@ -297,8 +324,16 @@ export default function CustomizePage() {
           enabled={config.showCategories}
           onToggle={v => setConfig(c => ({ ...c, showCategories: v }))}
           style={config.categoriesStyle}
-          onStyleChange={v => setConfig(c => ({ ...c, categoriesStyle: v as DisplayStyle }))}>
-          <p className="text-xs text-neutral-400">All your store categories will be displayed in this section.</p>
+          onStyleChange={v => setConfig(c => ({ ...c, categoriesStyle: v as DisplayStyle }))}
+          align={config.categoriesAlign}
+          onAlignChange={v => setConfig(c => ({ ...c, categoriesAlign: v }))}
+          description={config.categoriesDescription}
+          onDescriptionChange={v => setConfig(c => ({ ...c, categoriesDescription: v }))}
+          size={config.categoriesSize}
+          onSizeChange={v => setConfig(c => ({ ...c, categoriesSize: v }))}
+          onSave={saveSections}
+          saving={saving}>
+          <p className="text-xs text-neutral-400">All your store categories will be shown here.</p>
         </SectionPanel>
 
         <SectionPanel
@@ -306,13 +341,16 @@ export default function CustomizePage() {
           enabled={config.showNewArrivals}
           onToggle={v => setConfig(c => ({ ...c, showNewArrivals: v }))}
           style={config.newArrivalsStyle}
-          onStyleChange={v => setConfig(c => ({ ...c, newArrivalsStyle: v as DisplayStyle }))}>
-          <ProductPicker
-            label="Select up to 10 products"
-            products={products}
-            selected={config.newArrivalIds}
-            onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))}
-          />
+          onStyleChange={v => setConfig(c => ({ ...c, newArrivalsStyle: v as DisplayStyle }))}
+          align={config.newArrivalsAlign}
+          onAlignChange={v => setConfig(c => ({ ...c, newArrivalsAlign: v }))}
+          description={config.newArrivalsDescription}
+          onDescriptionChange={v => setConfig(c => ({ ...c, newArrivalsDescription: v }))}
+          size={config.newArrivalsSize}
+          onSizeChange={v => setConfig(c => ({ ...c, newArrivalsSize: v }))}
+          onSave={saveSections}
+          saving={saving}>
+          <ProductPicker label="Select products" products={products} selected={config.newArrivalIds} onChange={ids => setConfig(c => ({ ...c, newArrivalIds: ids }))} />
         </SectionPanel>
 
         <SectionPanel
@@ -320,13 +358,16 @@ export default function CustomizePage() {
           enabled={config.showFeatured}
           onToggle={v => setConfig(c => ({ ...c, showFeatured: v }))}
           style={config.featuredStyle}
-          onStyleChange={v => setConfig(c => ({ ...c, featuredStyle: v as DisplayStyle }))}>
-          <ProductPicker
-            label="Select up to 10 products"
-            products={products}
-            selected={config.featuredIds}
-            onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))}
-          />
+          onStyleChange={v => setConfig(c => ({ ...c, featuredStyle: v as DisplayStyle }))}
+          align={config.featuredAlign}
+          onAlignChange={v => setConfig(c => ({ ...c, featuredAlign: v }))}
+          description={config.featuredDescription}
+          onDescriptionChange={v => setConfig(c => ({ ...c, featuredDescription: v }))}
+          size={config.featuredSize}
+          onSizeChange={v => setConfig(c => ({ ...c, featuredSize: v }))}
+          onSave={saveSections}
+          saving={saving}>
+          <ProductPicker label="Select products" products={products} selected={config.featuredIds} onChange={ids => setConfig(c => ({ ...c, featuredIds: ids }))} />
         </SectionPanel>
 
         {success && <p className="text-sm text-green-600">✓ Saved!</p>}
@@ -338,10 +379,13 @@ export default function CustomizePage() {
   );
 }
 
-function SectionPanel({ title, enabled, onToggle, style, onStyleChange, children }: Readonly<{
+function SectionPanel({ title, enabled, onToggle, style, onStyleChange, align, onAlignChange, description, onDescriptionChange, size, onSizeChange, onSave, saving, children }: Readonly<{
   title: string; enabled: boolean; onToggle: (v: boolean) => void;
   style: string; onStyleChange: (v: string) => void;
-  children?: React.ReactNode;
+  align: string; onAlignChange: (v: string) => void;
+  description: string; onDescriptionChange: (v: string) => void;
+  size: string; onSizeChange: (v: string) => void;
+  onSave: () => void; saving: boolean; children?: React.ReactNode;
 }>) {
   return (
     <Card>
@@ -355,17 +399,44 @@ function SectionPanel({ title, enabled, onToggle, style, onStyleChange, children
         </div>
       </CardHeader>
       {enabled && (
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">Display Style</Label>
+              <Select value={style} onValueChange={v => v && onStyleChange(v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{STYLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Heading Align</Label>
+              <Select value={align} onValueChange={v => v && onAlignChange(v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Item Size</Label>
+              <Select value={size} onValueChange={v => v && onSizeChange(v)}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="md">Medium</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="space-y-1">
-            <Label>Display Style</Label>
-            <Select value={style} onValueChange={v => v && onStyleChange(v)}>
-              <SelectTrigger className="max-w-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {STYLE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label className="text-xs">Description <span className="text-neutral-400">(optional)</span></Label>
+            <Textarea placeholder="Add a section description…" rows={2} value={description} onChange={e => onDescriptionChange(e.target.value)} />
           </div>
           {children}
+          <Button size="sm" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
         </CardContent>
       )}
     </Card>
@@ -377,11 +448,11 @@ function ProductPicker({ label, products, selected, onChange }: Readonly<{
 }>) {
   const toggle = (id: string) => {
     if (selected.includes(id)) { onChange(selected.filter(s => s !== id)); }
-    else if (selected.length < 10) { onChange([...selected, id]); }
+    else { onChange([...selected, id]); }
   };
   return (
     <div className="space-y-2">
-      <Label>{label} ({selected.length}/10)</Label>
+      <Label>{label} ({selected.length} selected)</Label>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-60 overflow-y-auto border rounded-lg p-2">
         {products.map(p => {
           const isSelected = selected.includes(p.id);

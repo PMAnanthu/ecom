@@ -31,10 +31,16 @@ app.get('/subscription-status', async (req: Request, res: Response) => {
     return;
   }
 
+  const now = new Date();
+  // Compute days remaining from renewsAt (live calculation, not stored counter)
+  const availableDays = admin.renewsAt
+    ? Math.max(0, Math.ceil((new Date(admin.renewsAt).getTime() - now.getTime()) / 86400000))
+    : (admin.availableDays ?? 0);
+
   res.json({
     subscribed: !!admin.subscriptionId,
-    availableDays: admin.availableDays ?? 0,
-    expired: (admin.availableDays ?? 0) <= 0,
+    availableDays,
+    expired: availableDays <= 0,
     renewsAt: admin.renewsAt,
     subscription: admin.subscription ? {
       name: admin.subscription.name,

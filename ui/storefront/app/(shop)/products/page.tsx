@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTemplate } from '@/lib/template-context';
 import { useShopData, type Category } from '@/lib/use-shop-data';
 import { useCartStore } from '@/lib/cart-store';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { TemplateWrapper } from '@/components/templates/TemplateWrapper';
 import { InfiniteProductGrid } from '@/components/product/InfiniteProductGrid';
 import { Input } from '@/components/ui/input';
@@ -181,16 +181,40 @@ function CardProduct({ p, base }: Readonly<{ p: ReturnType<typeof useShopData>['
 export default function ProductsPage() {
   const template = useTemplate();
   const base = useStorePath();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { products, tree, search, setSearch, category, setCategory, sort, setSort, loadMore, hasMore, loadingMore, total } = useShopData();
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // Sync URL params → state on mount and param changes
+  useEffect(() => {
+    const cat = searchParams.get('category') || '';
+    const s = searchParams.get('search') || '';
+    const srt = searchParams.get('sort') || 'newest';
+    if (cat !== category) setCategory(cat);
+    if (s !== search) setSearch(s);
+    if (srt !== sort) setSort(srt);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const updateUrl = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) params.set(key, value); else params.delete(key);
+    router.replace(`${base}/products?${params.toString()}`, { scroll: false });
+  };
+
+  const handleSetCategory = (v: string) => { setCategory(v); updateUrl('category', v); };
+  const handleSetSearch = (v: string) => { setSearch(v); updateUrl('search', v); };
+  const handleSetSort = (v: string) => { setSort(v); updateUrl('sort', v); };
 
   const count = <p className="text-sm text-neutral-500">{total} products</p>;
 
   const topbar = (accent?: string) => (
     <div className="flex flex-wrap items-center gap-3 mb-4">
-      <Input placeholder="Search…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs h-9" />
+      <Input placeholder="Search…" value={search} onChange={(e) => handleSetSearch(e.target.value)} className="max-w-xs h-9" />
       <div className="hidden md:block">
-        <SortSelect sort={sort} setSort={setSort} accent={accent} />
+        <SortSelect sort={sort} setSort={handleSetSort} accent={accent} />
       </div>
       <button type="button" onClick={() => setFilterOpen(true)}
         className="md:hidden flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-sm text-neutral-600 hover:border-black">
@@ -205,12 +229,12 @@ export default function ProductsPage() {
       <TemplateWrapper sidebar={
         <div>
           <p className="text-xs font-semibold text-neutral-400 uppercase mb-2">Categories</p>
-          <CategoryTree tree={tree} category={category} setCategory={setCategory} />
+          <CategoryTree tree={tree} category={category} setCategory={handleSetCategory} />
           <p className="text-xs font-semibold text-neutral-400 uppercase mt-4 mb-2">Sort</p>
-          <SortSelect sort={sort} setSort={setSort} />
+          <SortSelect sort={sort} setSort={handleSetSort} />
         </div>
       }>
-        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
+        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={handleSetCategory} sort={sort} setSort={handleSetSort} />
         {topbar()}
         <div className="md:hidden mb-2">{count}</div>
         {products.length === 0
@@ -230,10 +254,10 @@ export default function ProductsPage() {
           </div>
           {topbar('indigo')}
           <div className="hidden md:block mb-4">
-            <CategoryPills tree={tree} category={category} setCategory={setCategory} accent="indigo" />
+            <CategoryPills tree={tree} category={category} setCategory={handleSetCategory} accent="indigo" />
           </div>
           <div className="md:hidden mb-2">{count}</div>
-          <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
+          <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={handleSetCategory} sort={sort} setSort={handleSetSort} />
           {products.length === 0
             ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
             : <>
@@ -258,10 +282,10 @@ export default function ProductsPage() {
         </div>
         {topbar()}
         <div className="hidden md:block mb-4">
-          <CategoryPills tree={tree} category={category} setCategory={setCategory} />
+          <CategoryPills tree={tree} category={category} setCategory={handleSetCategory} />
         </div>
         <div className="md:hidden mb-2">{count}</div>
-        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
+        <MobileFilterDrawer open={filterOpen} onClose={() => setFilterOpen(false)} tree={tree} category={category} setCategory={handleSetCategory} sort={sort} setSort={handleSetSort} />
         {products.length === 0
           ? <p className="text-neutral-400 py-12 text-center">No products found.</p>
           : <InfiniteProductGrid products={products} loadMore={loadMore} hasMore={hasMore} loadingMore={loadingMore} />

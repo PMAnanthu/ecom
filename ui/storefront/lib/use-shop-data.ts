@@ -19,6 +19,7 @@ export interface Category {
   name: string;
   parentId: string | null;
   children?: Category[];
+  _count?: { products: number };
 }
 
 const PAGE_SIZE = 16;
