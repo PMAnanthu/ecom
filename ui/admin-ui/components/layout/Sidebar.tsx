@@ -9,7 +9,7 @@ import { api } from '@/lib/api';
 import {
   LayoutDashboard, Palette, Package, ClipboardList,
   Globe, Settings, LogOut, ShoppingBag, ExternalLink,
-  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard, Paintbrush,
+  ChevronDown, ChevronRight, Home, Info, Navigation, CreditCard, Paintbrush, Wallet,
 } from 'lucide-react';
 
 const customizeSubLinks = [
@@ -24,6 +24,7 @@ const adminLinks = [
   { href: '/orders', label: 'Orders', icon: ClipboardList },
   { href: '/store', label: 'Domain & Publish', icon: Globe },
   { href: '/subscription', label: 'Subscription', icon: CreditCard },
+  { href: '/settings/payment', label: 'Payment', icon: Wallet },
   { href: '/settings', label: 'Shop Settings', icon: Settings },
 ];
 

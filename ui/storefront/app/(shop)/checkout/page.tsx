@@ -30,6 +30,19 @@ const ADDR_FIELDS: [keyof AddrForm, string, string][] = [
   ['zip', 'PIN Code', '682001'],
 ];
 
+// Load Razorpay checkout script on demand
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise(resolve => {
+    if (document.getElementById('razorpay-script')) { resolve(true); return; }
+    const s = document.createElement('script');
+    s.id = 'razorpay-script';
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
 export default function CheckoutPage() {
   const { items, total, clear } = useCartStore();
   const { store, user } = useStorefrontStore();
@@ -74,8 +87,8 @@ export default function CheckoutPage() {
     const storeId = store?.id || getStoreIdFromLocalStorage();
     if (!storeId) { setError('Store not found — please go back.'); return; }
 
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
+
     try {
       let shippingAddress = selectedAddress
         ? { name: selectedAddress.name, line1: selectedAddress.line1, city: selectedAddress.city, country: selectedAddress.country, zip: selectedAddress.zip }
@@ -86,10 +99,65 @@ export default function CheckoutPage() {
         shippingAddress = { name: data.address.name, line1: data.address.line1, city: data.address.city, country: data.address.country, zip: data.address.zip };
       }
 
-      const cartPayload = items.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty }));
-      await api.post('/orders/orders/checkout', { shippingAddress, storeId, items: cartPayload });
-      clear();
-      router.push('/orders');
+      // Try Razorpay payment first; fall back to direct checkout if not configured
+      let paymentEnabled = false;
+      try {
+        const cartPayload = items.map(i => ({ productId: i.productId, name: i.name, price: i.price, qty: i.qty }));
+        // Create order in order-service first to get orderId
+        const { data: orderData } = await api.post('/orders/orders/checkout', { shippingAddress, storeId, items: cartPayload });
+        const orderId = orderData.order?.id;
+
+        // Create Razorpay payment order
+        const amountPaise = Math.round(total() * 100);
+        const { data: rzData } = await api.post('/payment/orders/create', {
+          amount: amountPaise,
+          currency: 'INR',
+          referenceId: orderId,
+        });
+
+        paymentEnabled = true;
+        const scriptLoaded = await loadRazorpayScript();
+        if (!scriptLoaded) throw new Error('Razorpay script failed to load');
+
+        await new Promise<void>((resolve, reject) => {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const rzp = new (window as any).Razorpay({
+            key: rzData.keyId,
+            amount: rzData.amount,
+            currency: rzData.currency,
+            order_id: rzData.orderId,
+            name: store?.name || 'Store',
+            description: 'Order Payment',
+            prefill: { email: user?.email },
+            handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+              try {
+                await api.post('/payment/orders/verify', {
+                  razorpayOrderId: response.razorpay_order_id,
+                  razorpayPaymentId: response.razorpay_payment_id,
+                  razorpaySignature: response.razorpay_signature,
+                });
+                clear();
+                router.push('/orders');
+                resolve();
+              } catch { reject(new Error('Payment verification failed')); }
+            },
+            modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
+          });
+          rzp.open();
+        });
+        return;
+      } catch (rzErr: unknown) {
+        // If payment wasn't enabled/configured, order was already placed — redirect
+        if (paymentEnabled) {
+          const msg = rzErr instanceof Error ? rzErr.message : 'Payment failed';
+          if (msg === 'Payment cancelled') { setError('Payment cancelled. Your order was not completed.'); return; }
+          throw rzErr;
+        }
+        // Razorpay not configured — order already placed above, just redirect
+        clear();
+        router.push('/orders');
+        return;
+      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
       setError(msg || 'Failed to place order. Please try again.');
@@ -174,17 +242,17 @@ export default function CheckoutPage() {
             </label>
             {error && <p className="text-sm text-red-500">{error}</p>}
             <Button type="submit" disabled={loading} className={btnCls}>
-              {loading ? 'Placing order…' : 'Place Order'}
+              {loading ? 'Processing…' : 'Pay & Place Order'}
             </Button>
           </form>
         )}
 
-        {/* Checkout button for saved address selection */}
+        {/* Checkout button for saved address */}
         {!showNew && selectedAddress && (
           <form onSubmit={handleSubmit}>
             {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
             <Button type="submit" disabled={loading} className={btnCls}>
-              {loading ? 'Placing order…' : `Deliver to ${selectedAddress.city} — Place Order`}
+              {loading ? 'Processing…' : `Pay & Deliver to ${selectedAddress.city}`}
             </Button>
           </form>
         )}

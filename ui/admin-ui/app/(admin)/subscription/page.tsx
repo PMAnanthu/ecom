@@ -23,6 +23,18 @@ const PERIOD_LABEL: Record<string, string> = { MONTHLY: '30 days', QUARTERLY: '9
 
 type PayStep = 'idle' | 'confirm' | 'processing' | 'success';
 
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise(resolve => {
+    if (document.getElementById('razorpay-script')) { resolve(true); return; }
+    const s = document.createElement('script');
+    s.id = 'razorpay-script';
+    s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+}
+
 export default function SubscriptionPage() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -32,7 +44,6 @@ export default function SubscriptionPage() {
   const [payStep, setPayStep] = useState<PayStep>('idle');
   const [payRef, setPayRef] = useState('');
   const [error, setError] = useState('');
-  const [cardLast4, setCardLast4] = useState('4242');
 
   useEffect(() => {
     api.get('/platform/subscriptions').then(r => setPlans(r.data.subscriptions || [])).catch(() => {});
@@ -41,27 +52,79 @@ export default function SubscriptionPage() {
 
   const openConfirm = (plan: Plan) => { setSelected(plan); setPayStep('confirm'); setError(''); };
 
+  const activateSubscription = async (plan: Plan, paymentRef: string) => {
+    await api.post('/platform/manage/buy', {
+      subscriptionId: plan.id,
+      adminEmail: user?.email,
+      paymentMethod: 'razorpay',
+      paymentRef,
+    });
+    setPayRef(paymentRef);
+    setPayStep('success');
+    api.get('/platform/subscription-status').then(r => setStatus(r.data)).catch(() => {});
+  };
+
   const pay = async () => {
     if (!selected || !user?.email) return;
     setPayStep('processing'); setError('');
+
     try {
-      const { data } = await api.post('/platform/manage/buy', {
-        subscriptionId: selected.id,
-        adminEmail: user.email,
-        paymentMethod: 'dummy',
-        cardLast4,
+      // Free plan — activate directly
+      if (selected.price === 0) {
+        await activateSubscription(selected, `FREE-${Date.now()}`);
+        return;
+      }
+
+      // Create Razorpay order
+      const amountPaise = Math.round(selected.price * 100);
+      let rzData: { orderId: string; amount: number; currency: string; keyId: string };
+      try {
+        const { data } = await api.post('/payment/subscriptions/create', {
+          amount: amountPaise,
+          currency: 'INR',
+          referenceId: selected.id,
+        });
+        rzData = data;
+      } catch {
+        // Payment service not configured — fall back to dummy
+        await activateSubscription(selected, `DUMMY-${Date.now()}`);
+        return;
+      }
+
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) throw new Error('Razorpay script failed to load');
+
+      await new Promise<void>((resolve, reject) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rzp = new (window as any).Razorpay({
+          key: rzData.keyId,
+          amount: rzData.amount,
+          currency: rzData.currency,
+          order_id: rzData.orderId,
+          name: 'Platform Subscription',
+          description: `${selected.name} — ${PERIOD_LABEL[selected.billingPeriod]}`,
+          prefill: { email: user.email },
+          handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+            try {
+              await api.post('/payment/subscriptions/verify', {
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              });
+              await activateSubscription(selected, response.razorpay_payment_id);
+              resolve();
+            } catch { reject(new Error('Payment verification failed')); }
+          },
+          modal: { ondismiss: () => reject(new Error('Payment cancelled')) },
+        });
+        rzp.open();
       });
-      setPayRef(data.paymentRef);
-      setPayStep('success');
-      // Refresh status
-      api.get('/platform/subscription-status').then(r => setStatus(r.data)).catch(() => {});
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { error?: string } } })?.response?.data?.error || 'Payment failed');
+      const msg = err instanceof Error ? err.message : (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setError(msg || 'Payment failed');
       setPayStep('confirm');
     }
   };
-
-  const done = () => { router.push('/dashboard'); };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -70,7 +133,6 @@ export default function SubscriptionPage() {
         <p className="text-neutral-500 text-sm">Select a plan to activate or renew your store access.</p>
       </div>
 
-      {/* Current status */}
       {status && (
         <div className={`rounded-xl p-4 mb-8 flex items-center gap-3 text-sm ${status.expired ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'}`}>
           <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${status.expired ? 'bg-red-500' : 'bg-green-500'}`} />
@@ -86,13 +148,13 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Plans grid */}
       {plans.length === 0 && (
         <div className="text-center py-16 text-neutral-400">
           <Zap size={32} className="mx-auto mb-3 opacity-30" />
           <p>No plans available. Contact your platform admin.</p>
         </div>
       )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         {plans.map(plan => {
           const isCurrent = status?.subscription?.name === plan.name && !status?.expired;
@@ -134,7 +196,7 @@ export default function SubscriptionPage() {
                 <p className="text-neutral-500 text-sm mb-1">You are now subscribed to <strong>{selected.name}</strong></p>
                 <p className="text-neutral-400 text-xs mb-1">Ref: {payRef}</p>
                 <p className="text-neutral-400 text-xs mb-6">{PERIOD_DAYS[selected.billingPeriod]} days added to your account</p>
-                <Button className="w-full" onClick={done}>Go to Dashboard</Button>
+                <Button className="w-full" onClick={() => router.push('/dashboard')}>Go to Dashboard</Button>
               </CardContent>
             ) : (
               <>
@@ -159,35 +221,20 @@ export default function SubscriptionPage() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Payment Details (Demo)</p>
-                    <div className="border rounded-lg p-3 space-y-2 bg-neutral-50">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-neutral-400 w-24 shrink-0">Card number</span>
-                        <span className="font-mono">•••• •••• •••• </span>
-                        <input value={cardLast4} onChange={e => setCardLast4(e.target.value.slice(0, 4))}
-                          className="font-mono w-12 border rounded px-1 text-sm" maxLength={4} placeholder="4242" />
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-neutral-400">
-                        <span className="w-24 shrink-0">Expires</span>
-                        <span className="font-mono">12/99</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-neutral-400">
-                        <span className="w-24 shrink-0">CVV</span>
-                        <span className="font-mono">•••</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-neutral-400">🔒 This is a demo payment — no real charge will be made.</p>
-                  </div>
+                  {selected.price > 0 && (
+                    <p className="text-xs text-neutral-500 text-center">
+                      You will be redirected to Razorpay to complete payment securely.
+                    </p>
+                  )}
 
                   {error && <p className="text-sm text-red-500">{error}</p>}
 
                   <div className="flex gap-2">
                     {(() => {
-                      const priceLabel = selected.price === 0 ? 'Free' : `${selected.currency} ${selected.price.toLocaleString()}`;
+                      const priceLabel = selected.price === 0 ? 'Activate Free' : `Pay ${selected.currency} ${selected.price.toLocaleString()}`;
                       const btnContent = payStep === 'processing'
                         ? <><Loader2 size={14} className="mr-2 animate-spin" />Processing…</>
-                        : `Pay ${priceLabel}`;
+                        : priceLabel;
                       return <Button className="flex-1" onClick={pay} disabled={payStep === 'processing'}>{btnContent}</Button>;
                     })()}
                     <Button variant="outline" onClick={() => setPayStep('idle')}>Cancel</Button>

@@ -74,7 +74,7 @@ subscriptionLifecycleRouter.get('/', async (_req: Request, res: Response) => {
     availableDays: a.availableDays,
     renewsAt: a.renewsAt,
     expired: (a.availableDays ?? 0) <= 0,
-    daysUntilExpiry: a.renewsAt ? Math.ceil((new Date(a.renewsAt).getTime() - now.getTime()) / 86400000) : null,
+    daysUntilExpiry: a.renewsAt ? Math.max(0, Math.floor((new Date(a.renewsAt).getTime() - now.getTime()) / 86400000)) : null,
   }));
   res.json({ admins: result });
 });

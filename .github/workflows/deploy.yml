@@ -24,6 +24,7 @@ jobs:
           - order-service
           - storefront-service
           - notification-service
+          - payment-service
           - api-gateway
           - platform-ui
           - storefront
@@ -69,7 +70,7 @@ jobs:
 
       - name: Roll out deployments
         run: |
-          for svc in auth-service platform-service store-service catalog-service order-service storefront-service notification-service api-gateway platform-ui storefront; do
+          for svc in auth-service platform-service store-service catalog-service order-service storefront-service notification-service payment-service api-gateway platform-ui storefront; do
             kubectl rollout restart deployment/${svc} -n ecom
           done
           kubectl rollout status deployment/api-gateway -n ecom --timeout=120s

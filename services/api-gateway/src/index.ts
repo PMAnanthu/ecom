@@ -59,6 +59,7 @@ const CATALOG_URL = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3
 const ORDER_URL = process.env.ORDER_SERVICE_URL || 'http://order-service:3005';
 const STOREFRONT_URL = process.env.STOREFRONT_SERVICE_URL || 'http://storefront-service:3006';
 const NOTIFICATION_URL = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3007';
+const PAYMENT_URL = process.env.PAYMENT_SERVICE_URL || 'http://payment-service:3008';
 
 const proxy = httpProxy.createProxyServer({ changeOrigin: true, xfwd: true });
 proxy.on('error', (err, _req, res) => {
@@ -212,6 +213,16 @@ app.all('/api/orders/*', ...mw(authenticate), forward(ORDER_URL, 'orders'));
 app.all('/api/notifications/config', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
 app.get('/api/notifications/logs', ...mw(authenticate, requireRole('SUPERADMIN')), forward(NOTIFICATION_URL, 'notifications'));
 app.all('/api/notifications/send', ...mw(authenticate), forward(NOTIFICATION_URL, 'notifications'));
+
+// Payment: platform config — super-admin only
+app.all('/api/payment/platform-config', ...mw(authenticate, requireRole('SUPERADMIN')), forward(PAYMENT_URL, 'payment'));
+// Payment: store config — store admin only
+app.all('/api/payment/store-config', ...mw(authenticate, requireRole('ADMIN')), forward(PAYMENT_URL, 'payment'));
+// Payment: create/verify orders and subscriptions — any authenticated user
+app.all('/api/payment/orders', ...mw(authenticate), forward(PAYMENT_URL, 'payment'));
+app.all('/api/payment/orders/*', ...mw(authenticate), forward(PAYMENT_URL, 'payment'));
+app.all('/api/payment/subscriptions', ...mw(authenticate), forward(PAYMENT_URL, 'payment'));
+app.all('/api/payment/subscriptions/*', ...mw(authenticate), forward(PAYMENT_URL, 'payment'));
 
 app.listen(PORT, () => console.log(`api-gateway running on port ${PORT}`));
 

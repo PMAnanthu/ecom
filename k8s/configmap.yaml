@@ -12,3 +12,4 @@ data:
   STOREFRONT_SERVICE_URL: "http://storefront-service:3006"
   REDIS_URL: "redis://redis:6379"
   NOTIFICATION_SERVICE_URL: "http://notification-service:3007"
+  PAYMENT_SERVICE_URL: "http://payment-service:3008"

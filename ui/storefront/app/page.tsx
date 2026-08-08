@@ -360,12 +360,12 @@ function HomeSections({ branding, allProducts, allCategories, base, symbol, addI
     if (!isTruthy(show) || !content) return null;
     const alignCls = sectionAlign(align);
     return (
-      <section className="px-4 py-8 max-w-7xl mx-auto">
-        <div className={`flex flex-col gap-1 mb-5 ${alignCls}`}>
+      <section className="w-full px-4 py-8 max-w-7xl mx-auto">
+        <div className={`mb-5 ${alignCls}`}>
           <h2 className="text-xl font-bold">{title}</h2>
-          {typeof desc === 'string' && desc && <p className="text-sm text-neutral-500 max-w-lg">{desc}</p>}
+          {typeof desc === 'string' && desc && <p className="text-sm text-neutral-500 max-w-lg mt-1">{desc}</p>}
         </div>
-        {content}
+        <div className="w-full">{content}</div>
       </section>
     );
   };
